@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 1
+names: ['cars']
+
+roboflow:
+  workspace: stars-ss3lr
+  project: projects
+  version: 2
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/stars-ss3lr/projects/dataset/2
