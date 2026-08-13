@@ -1,0 +1,4294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fix Nearby - AI Repair Diagnosis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* ===== ROOT VARIABLES (TomatoGuard + Fix Nearby Merge) ===== */
+        :root {
+            /* Primary: Indigo (Fix Nearby) + Tomato accent */
+            --primary: #E74C3C;
+            --primary-dark: #C0392B;
+            --primary-light: #F1948A;
+            --secondary: #27AE60;
+            --secondary-light: #2ECC71;
+            --accent: #F39C12;
+            --accent-green: #27AE60;
+
+            /* Neutrals */
+            --dark: #2C3E50;
+            --dark-light: #34495E;
+            --gray-100: #ECF0F1;
+            --gray-200: #D5D8DC;
+            --gray-300: #BDC3C7;
+            --gray-600: #7F8C8D;
+            --gray-800: #2C3E50;
+            --white: #ffffff;
+
+            /* Gradients */
+            --gradient-primary: linear-gradient(135deg, #E74C3C 0%, #C0392B 100%);
+            --gradient-accent: linear-gradient(135deg, #F39C12 0%, #E67E22 100%);
+            --gradient-success: linear-gradient(135deg, #27AE60 0%, #1E8449 100%);
+            --gradient-dark: linear-gradient(135deg, #2C3E50 0%, #1A252F 100%);
+
+            /* Typography */
+            --font-heading: 'Poppins', sans-serif;
+            --font-body: 'Inter', sans-serif;
+            
+            /* Effects */
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+            --radius: 12px;
+            --radius-lg: 20px;
+            --radius-xl: 24px;
+        }
+
+        [data-theme="dark"] {
+            --bg: #1a1a2e;
+            --bg-card: #2C3E50;
+            --bg-elevated: #334155;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+        }
+
+        [data-theme="light"] {
+            --bg: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-elevated: #f1f5f9;
+            --text: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+
+        /* ===== RESET & BASE ===== */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ===== GLASSMORPHISM UTILITIES (from TomatoGuard) ===== */
+        .glass {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .glass-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* ===== ANIMATIONS (TomatoGuard + Enhanced) ===== */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(2deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(100px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes blobFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(30px, -30px) scale(1.1); }
+        }
+
+        /* ===== LOADER (Enhanced with TomatoGuard style) ===== */
+        #loader {
+            position: fixed;
+            inset: 0;
+            background: var(--gradient-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.6s ease, visibility 0.6s ease;
+        }
+
+        #loader.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .loader-content {
+            text-align: center;
+            color: white;
+            animation: float 6s ease-in-out infinite;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .loader-icon {
+            width: 100px;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 50px;
+            margin: 0 auto 24px auto;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .loader-text {
+            font-family: var(--font-heading);
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .loader-subtext {
+            font-size: 16px;
+            opacity: 0.9;
+            margin-bottom: 32px;
+        }
+
+        .loader-progress {
+            width: 240px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .loader-progress-fill {
+            height: 100%;
+            width: 0%;
+            background: white;
+            border-radius: 2px;
+            animation: progressFill 2s ease-out forwards;
+        }
+
+        @keyframes progressFill {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+
+        /* ===== NAVIGATION (TomatoGuard style) ===== */
+        .main-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: transparent;
+            backdrop-filter: blur(0px);
+            z-index: 1000;
+            box-shadow: none;
+            transition: all 0.4s ease;
+        }
+        .main-nav.scrolled {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+        }
+        [data-theme="dark"] .main-nav.scrolled {
+            background: rgba(15, 23, 42, 0.95);
+        }
+        /* Nav links — dark since hero is light */
+        .main-nav:not(.scrolled) .nav-links a,
+        .main-nav:not(.scrolled) .logo {
+            color: var(--dark) !important;
+        }
+        .main-nav:not(.scrolled) .btn-nav {
+            background: var(--gradient-primary) !important;
+            color: white !important;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-family: var(--font-heading);
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 44px;
+            height: 44px;
+            background: var(--gradient-primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 32px;
+            align-items: center;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text);
+            font-weight: 500;
+            font-size: 15px;
+            transition: color 0.3s;
+            position: relative;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--primary);
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--primary);
+            transition: width 0.3s;
+        }
+
+        .nav-links a:hover::after,
+        .nav-links a.active::after {
+            width: 100%;
+        }
+
+        .btn-nav {
+            background: var(--gradient-primary);
+            color: white !important;
+            padding: 10px 24px;
+            border-radius: 25px;
+            transition: transform 0.3s, box-shadow 0.3s !important;
+        }
+
+        .btn-nav:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79, 70, 229, 0.3);
+        }
+
+        .mobile-menu-toggle {
+            display: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text);
+        }
+
+        /* ===== HERO SECTION (TomatoGuard style) ===== */
+        .hero {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            display: flex;
+            align-items: center;
+            padding: 140px 24px 80px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        [data-theme="dark"] .hero {
+            background: var(--gradient-dark);
+        }
+
+        .hero-bg-blobs {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.4;
+            animation: blobFloat 10s ease-in-out infinite;
+        }
+
+        .blob-1 {
+            width: 400px;
+            height: 400px;
+            background: var(--primary);
+            top: -100px;
+            left: -100px;
+        }
+
+        .blob-2 {
+            width: 300px;
+            height: 300px;
+            background: var(--accent);
+            bottom: -50px;
+            right: -50px;
+            animation-delay: -5s;
+        }
+
+        .hero-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(79, 70, 229, 0.1);
+            color: var(--primary);
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 24px;
+        }
+
+        .hero-title {
+            font-family: var(--font-heading);
+            font-size: clamp(36px, 5vw, 56px);
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 24px;
+            color: var(--text);
+        }
+
+        .highlight {
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            position: relative;
+        }
+
+        .hero-subtitle {
+            font-size: 18px;
+            color: var(--text-muted);
+            margin-bottom: 32px;
+            max-width: 500px;
+            line-height: 1.7;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--gradient-primary);
+            color: white;
+            padding: 16px 32px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4);
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: transparent;
+            color: var(--text);
+            padding: 16px 32px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            border: 2px solid var(--border);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .btn-secondary:hover {
+            background: var(--text);
+            color: var(--bg);
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 40px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            display: block;
+            font-family: var(--font-heading);
+            font-size: 36px;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        /* Hero Visual */
+        .hero-visual {
+            position: relative;
+            height: 500px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .floating-cards {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        .float-card {
+            position: absolute;
+            background: var(--bg-card);
+            padding: 16px 24px;
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            font-weight: 600;
+            font-size: 14px;
+            animation: float 6s ease-in-out infinite;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .float-card-1 {
+            top: 15%;
+            left: 5%;
+            color: var(--accent);
+            animation-delay: 0s;
+        }
+
+        .float-card-2 {
+            top: 45%;
+            right: 5%;
+            color: var(--primary);
+            animation-delay: 2s;
+        }
+
+        .float-card-3 {
+            bottom: 20%;
+            left: 15%;
+            color: var(--accent-green);
+            animation-delay: 4s;
+        }
+
+        .hero-device {
+            font-size: 180px;
+            filter: drop-shadow(0 20px 40px rgba(79, 70, 229, 0.2));
+            animation: pulse 3s ease-in-out infinite;
+            z-index: 1;
+        }
+
+        .scroll-indicator {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--text-muted);
+            font-size: 24px;
+            animation: bounce 2s infinite;
+            cursor: pointer;
+        }
+
+        /* ===== MAIN APP SECTION ===== */
+        .app-section {
+            padding: 80px 24px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .section-title {
+            font-family: var(--font-heading);
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--text);
+        }
+
+        .section-subtitle {
+            color: var(--text-muted);
+            font-size: 16px;
+        }
+
+        /* ===== DEVICE SELECTOR (Enhanced) ===== */
+        .device-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .device-card {
+            background: var(--white);
+            border: 2px solid var(--gray-200);
+            border-radius: 20px;
+            padding: 28px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        .device-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-primary);
+            transform: scaleX(0);
+            transition: transform 0.3s;
+        }
+
+        .device-card:hover {
+            border-color: var(--primary-light);
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .device-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .device-card.active {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.05) 0%, rgba(6, 182, 212, 0.05) 100%);
+        }
+
+        .device-card.active::before {
+            transform: scaleX(1);
+        }
+
+        .device-icon {
+            width: 56px;
+            height: 56px;
+            margin: 0 auto 16px;
+            background: var(--bg-elevated);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            transition: all 0.3s;
+        }
+
+        .device-card.active .device-icon {
+            background: var(--gradient-primary);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .device-name {
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--text);
+        }
+
+        .device-card.active .device-name {
+            color: var(--primary);
+        }
+
+        /* ===== UPLOAD ZONE (TomatoGuard style) ===== */
+        .upload-container {
+            margin-bottom: 32px;
+        }
+
+        .upload-zone {
+            background: var(--bg-card);
+            border: 3px dashed var(--border);
+            border-radius: var(--radius-xl);
+            padding: 60px 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.03) 0%, rgba(6, 182, 212, 0.03) 100%);
+            transform: translateY(-3px);
+        }
+
+        .upload-zone::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at center, rgba(79, 70, 229, 0.1) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .upload-zone:hover::before {
+            opacity: 1;
+        }
+
+        .upload-icon {
+            width: 90px;
+            height: 90px;
+            margin: 0 auto 24px;
+            background: var(--gradient-primary);
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            color: white;
+            box-shadow: 0 10px 30px rgba(79, 70, 229, 0.3);
+        }
+
+        .upload-text h3 {
+            font-family: var(--font-heading);
+            font-size: 22px;
+            margin-bottom: 12px;
+            color: var(--text);
+        }
+
+        .upload-text p {
+            color: var(--text-muted);
+            font-size: 15px;
+            margin-bottom: 24px;
+        }
+
+        .upload-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 28px;
+            background: var(--bg-elevated);
+            color: var(--text);
+            border: 2px solid var(--border);
+            border-radius: 30px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .upload-btn:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        /* ===== PREVIEW BOX (TomatoGuard style) ===== */
+        .preview-box {
+            background: var(--bg-card);
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            box-shadow: var(--shadow-xl);
+            display: none;
+            margin-bottom: 24px;
+        }
+
+        .preview-box.show {
+            display: block;
+            animation: slideUp 0.5s ease;
+        }
+
+        .preview-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .preview-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .preview-remove {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            border: none;
+            background: var(--bg-elevated);
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.3s;
+        }
+
+        .preview-remove:hover {
+            background: var(--accent);
+            color: white;
+        }
+
+        .preview-image {
+            width: 100%;
+            max-height: 400px;
+            object-fit: contain;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            display: block;
+        }
+
+        .analyze-btn {
+            width: 100%;
+            padding: 20px;
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            transition: all 0.3s;
+        }
+
+        .analyze-btn:hover:not(:disabled) {
+            opacity: 0.9;
+        }
+
+        .analyze-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .analyze-btn .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* ===== RESULT CARDS (Enhanced from both projects) ===== */
+        .result-container {
+            display: none;
+        }
+
+        .result-container.show {
+            display: block;
+            animation: slideUp 0.5s ease;
+        }
+
+        .result-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .result-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .result-badge.success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--accent-green);
+        }
+
+        .result-badge.warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+        }
+
+        .result-badge.danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--accent);
+        }
+
+        .result-title {
+            font-family: var(--font-heading);
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        /* Damage Cards (TomatoGuard style applied to Fix Nearby) */
+        .damage-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 28px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            transition: all 0.3s;
+            animation: slideUp 0.5s ease backwards;
+        }
+
+        .damage-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .damage-card:nth-child(2) { animation-delay: 0.1s; }
+        .damage-card:nth-child(3) { animation-delay: 0.2s; }
+
+        .damage-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .damage-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            flex-shrink: 0;
+        }
+
+        .damage-icon.scratch { background: rgba(245, 158, 11, 0.1); }
+        .damage-icon.crack { background: rgba(239, 68, 68, 0.1); }
+        .damage-icon.dead-pixel { background: rgba(16, 185, 129, 0.1); }
+        .damage-icon.normal { background: rgba(6, 182, 212, 0.1); }
+
+        .damage-title {
+            flex: 1;
+        }
+
+        .damage-title .label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .damage-title h4 {
+            font-family: var(--font-heading);
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .confidence-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .confidence-badge.high {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--accent-green);
+        }
+
+        .confidence-badge.medium {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+        }
+
+        .confidence-badge.low {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--accent);
+        }
+
+        /* Confidence Bar (New from Fix Nearby) */
+        .confidence-bar {
+            margin-bottom: 20px;
+        }
+
+        .confidence-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .confidence-track {
+            height: 10px;
+            background: var(--bg-elevated);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 1s ease;
+        }
+
+        .confidence-fill.high { background: var(--gradient-success); }
+        .confidence-fill.medium { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+        .confidence-fill.low { background: var(--gradient-accent); }
+
+        /* Damage Meta (Cost + Severity) */
+        .damage-meta {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .meta-item {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .meta-label {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .meta-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .meta-value.severity-high { color: var(--accent); }
+        .meta-value.severity-medium { color: #f59e0b; }
+        .meta-value.severity-low { color: var(--accent-green); }
+
+        /* Treatment Section (from TomatoGuard) */
+        .treatment-section {
+            background: linear-gradient(135deg, rgba(39, 174, 96, 0.1) 0%, rgba(30, 132, 73, 0.1) 100%);
+            border-left: 4px solid var(--accent-green);
+            padding: 20px;
+            border-radius: 0 var(--radius) var(--radius) 0;
+            margin-top: 16px;
+        }
+
+        .treatment-section h5 {
+            color: var(--accent-green);
+            font-family: var(--font-heading);
+            font-size: 16px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .treatment-section p {
+            color: var(--text);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* ===== SHOPS SECTION ===== */
+        .shops-section {
+            margin-top: 40px;
+        }
+
+        .section-header-flex {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+
+        .shop-card {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border);
+            display: flex;
+            gap: 20px;
+            transition: all 0.3s;
+            animation: slideUp 0.4s ease backwards;
+        }
+
+        .shop-card:hover {
+            border-color: var(--primary);
+            box-shadow: var(--shadow-lg);
+            transform: translateX(5px);
+        }
+
+        .shop-card:nth-child(2) { animation-delay: 0.1s; }
+        .shop-card:nth-child(3) { animation-delay: 0.2s; }
+
+        .shop-icon {
+            width: 56px;
+            height: 56px;
+            background: var(--gradient-primary);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .shop-info {
+            flex: 1;
+        }
+
+        .shop-name {
+            font-family: var(--font-heading);
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 6px;
+        }
+
+        .shop-address {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .shop-meta {
+            display: flex;
+            gap: 20px;
+            font-size: 13px;
+        }
+
+        .shop-rating {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #f59e0b;
+            font-weight: 600;
+        }
+
+        .shop-distance {
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .shop-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .shop-status.open {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--accent-green);
+        }
+
+        .shop-status.closed {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--accent);
+        }
+
+        .shop-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn-call {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: var(--accent-green);
+            color: white;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-call:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(39, 174, 96, 0.3);
+        }
+
+        .btn-direction {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: var(--bg-elevated);
+            color: var(--text);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-direction:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* ===== HISTORY SECTION (New) ===== */
+        .history-section {
+            margin-top: 40px;
+            display: none;
+        }
+
+        .history-section.show {
+            display: block;
+        }
+
+        .history-card {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            transition: all 0.3s;
+        }
+
+        .history-card:hover {
+            box-shadow: var(--shadow);
+        }
+
+        .history-thumb {
+            width: 80px;
+            height: 80px;
+            border-radius: 12px;
+            object-fit: cover;
+            background: var(--bg-elevated);
+        }
+
+        .history-info {
+            flex: 1;
+        }
+
+        .history-device {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .history-damage {
+            font-family: var(--font-heading);
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .history-date {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .history-status {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .history-status.fixed {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--accent-green);
+        }
+
+        .history-status.pending {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+        }
+
+        /* ===== BOTTOM NAVIGATION (Mobile App Style) ===== */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-card);
+            border-top: 1px solid var(--border);
+            padding: 12px 24px calc(12px + env(safe-area-inset-bottom));
+            display: flex;
+            justify-content: space-around;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 20px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.3s;
+            border-radius: 16px;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            color: var(--primary);
+            background: rgba(79, 70, 229, 0.1);
+        }
+
+        .nav-item i {
+            font-size: 24px;
+        }
+
+        /* ===== TOAST NOTIFICATIONS ===== */
+        .toast-container {
+            position: fixed;
+            top: 100px;
+            right: 24px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .toast {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 16px 24px;
+            box-shadow: var(--shadow-xl);
+            border-left: 4px solid;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 320px;
+            animation: slideInRight 0.4s ease;
+        }
+
+        .toast.success { border-color: var(--accent-green); }
+        .toast.error { border-color: var(--accent); }
+        .toast.warning { border-color: #f59e0b; }
+
+        .toast-icon {
+            font-size: 20px;
+        }
+
+        .toast-content {
+            flex: 1;
+        }
+
+        .toast-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text);
+            margin-bottom: 2px;
+        }
+
+        .toast-message {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        /* ===== SKELETON LOADING ===== */
+        .skeleton {
+            background: linear-gradient(90deg, var(--bg-elevated) 25%, var(--border) 50%, var(--bg-elevated) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 8px;
+        }
+
+        /* ===== EMPTY STATE ===== */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-icon {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 20px;
+            background: var(--bg-elevated);
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+        }
+
+        /* ===== FOOTER ===== */
+        .main-footer {
+            background: var(--gradient-dark);
+            color: white;
+            padding: 60px 24px 30px;
+            margin-bottom: 80px; /* Space for bottom nav */
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .footer-brand {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            font-family: var(--font-heading);
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .footer-text {
+            opacity: 0.8;
+            max-width: 400px;
+            margin: 0 auto 32px;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            margin-bottom: 32px;
+        }
+
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 24px;
+            opacity: 0.6;
+            font-size: 14px;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 1024px) {
+            .hero-content {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .hero-visual {
+                display: none;
+            }
+
+            .hero-subtitle {
+                margin: 0 auto 32px;
+            }
+
+            .hero-buttons {
+                justify-content: center;
+            }
+
+            .hero-stats {
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .mobile-menu-toggle {
+                display: block;
+            }
+
+            .hero {
+                padding: 120px 20px 60px;
+            }
+
+            .hero-title {
+                font-size: 32px;
+            }
+
+            .device-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .damage-meta {
+                grid-template-columns: 1fr;
+            }
+
+            .shop-card {
+                flex-direction: column;
+            }
+
+            .shop-actions {
+                flex-direction: row;
+                justify-content: flex-end;
+            }
+
+            .main-footer {
+                margin-bottom: 100px;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .bottom-nav {
+                display: none;
+            }
+
+            .main-footer {
+                margin-bottom: 0;
+            }
+        }
+
+        /* ===== UTILITY ===== */
+        .hidden { display: none !important; }
+        .text-center { text-align: center; }
+        .mb-0 { margin-bottom: 0 !important; }
+        .mt-4 { margin-top: 16px; }
+
+        /* ===== UPLOAD PROGRESS BAR ===== */
+        .upload-progress-wrap {
+            display: none;
+            margin-top: 16px;
+            background: var(--gray-100);
+            border-radius: 999px;
+            height: 8px;
+            overflow: hidden;
+        }
+        .upload-progress-wrap.show { display: block; }
+        .upload-progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--primary), #06b6d4);
+            border-radius: 999px;
+            transition: width 0.3s ease;
+        }
+        .upload-progress-label {
+            display: none;
+            font-size: 0.78rem;
+            color: var(--primary);
+            font-weight: 600;
+            margin-top: 6px;
+            text-align: center;
+        }
+        .upload-progress-label.show { display: block; }
+
+        /* ===== BACK TO TOP BUTTON ===== */
+        #backToTop {
+            position: fixed;
+            bottom: 100px;
+            right: 24px;
+            width: 44px;
+            height: 44px;
+            background: var(--gradient-primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 16px rgba(79,70,229,0.4);
+            cursor: pointer;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 500;
+            border: none;
+        }
+        #backToTop.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        #backToTop:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(79,70,229,0.5);
+        }
+
+        /* ===== AOS ANIMATIONS ===== */
+        [data-aos] {
+            opacity: 0;
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        [data-aos="fade-up"] { transform: translateY(40px); }
+        [data-aos="fade-right"] { transform: translateX(-40px); }
+        [data-aos="fade-left"] { transform: translateX(40px); }
+        [data-aos="zoom-in"] { transform: scale(0.85); }
+        [data-aos].aos-animate {
+            opacity: 1;
+            transform: translate(0) scale(1);
+        }
+
+        /* ===== ABOUT / TECH STACK SECTION ===== */
+        .about-section {
+            padding: 80px 24px;
+            background: var(--bg);
+        }
+        .about-grid {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 48px;
+            align-items: center;
+        }
+        .about-text h2 {
+            font-family: var(--font-heading);
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--text);
+        }
+        .about-text h2 span { color: var(--primary); }
+        .about-text p {
+            color: var(--gray-600);
+            line-height: 1.8;
+            margin-bottom: 24px;
+            font-size: 1rem;
+        }
+        .about-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .about-badge {
+            background: rgba(231,76,60,0.1);
+            color: var(--primary);
+            border: 1px solid rgba(231,76,60,0.3);
+            padding: 6px 16px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .tech-grid-about {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .tech-card-about {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.25s;
+        }
+        .tech-card-about:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-xl);
+            border-color: var(--primary-light);
+        }
+        .tech-card-about .ticon { font-size: 2rem; margin-bottom: 8px; }
+        .tech-card-about h4 {
+            font-family: var(--font-heading);
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .tech-card-about p { font-size: 0.75rem; color: var(--gray-600); }
+
+        /* Team section */
+        .team-section {
+            padding: 60px 24px;
+            background: var(--bg-card);
+            border-top: 1px solid var(--border);
+        }
+        .team-grid {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            gap: 24px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .team-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 28px 24px;
+            text-align: center;
+            min-width: 160px;
+            transition: all 0.25s;
+        }
+        .team-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-xl);
+        }
+        .team-avatar {
+            width: 64px;
+            height: 64px;
+            background: var(--gradient-primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            margin: 0 auto 12px;
+        }
+        .team-name { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
+        .team-role { font-size: 0.78rem; color: var(--gray-600); }
+
+        @media(max-width: 768px) {
+            .about-grid { grid-template-columns: 1fr; gap: 32px; }
+            .about-text h2 { font-size: 1.7rem; }
+        }
+
+
+        /* ═══ DEVICE MISMATCH ERROR MODAL ═══ */
+        #deviceErrorModal {
+            display: none;
+            position: fixed; inset: 0; z-index: 99990;
+            align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+        }
+        #deviceErrorModal.dem-open {
+            display: flex;
+            animation: demFadeIn .3s ease;
+        }
+        @keyframes demFadeIn { from{opacity:0} to{opacity:1} }
+        .dem-card {
+            background: #fff;
+            border-radius: 28px;
+            padding: 0;
+            width: 90%;
+            max-width: 420px;
+            overflow: hidden;
+            box-shadow: 0 30px 80px rgba(231,76,60,.25);
+            animation: demSlideUp .45s cubic-bezier(.34,1.56,.64,1);
+        }
+        @keyframes demSlideUp {
+            from { transform: translateY(60px) scale(.95); opacity:0 }
+            to   { transform: none; opacity:1 }
+        }
+        .dem-header {
+            background: linear-gradient(135deg, #E74C3C, #C0392B);
+            padding: 2rem 2rem 1.5rem;
+            text-align: center;
+            position: relative;
+        }
+        .dem-icon-wrap {
+            width: 72px; height: 72px;
+            background: rgba(255,255,255,.15);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2.2rem;
+            margin: 0 auto 1rem;
+            border: 3px solid rgba(255,255,255,.3);
+        }
+        .dem-header h3 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.3rem; font-weight: 700;
+            color: #fff; margin: 0 0 .35rem;
+        }
+        .dem-header p {
+            font-size: .85rem; color: rgba(255,255,255,.85); margin: 0;
+        }
+        .dem-body {
+            padding: 1.6rem 1.8rem;
+        }
+        .dem-compare {
+            display: flex; align-items: center;
+            gap: .8rem; margin-bottom: 1.4rem;
+        }
+        .dem-device-box {
+            flex: 1; text-align: center;
+            background: #f8fafc; border-radius: 14px;
+            padding: 1rem .8rem; border: 2px solid #e2e8f0;
+        }
+        .dem-device-box.selected { border-color: #E74C3C; background: #fff5f5; }
+        .dem-device-box.uploaded { border-color: #F39C12; background: #fffbf0; }
+        .dem-device-box .dem-emoji { font-size: 2rem; display: block; margin-bottom: .4rem; }
+        .dem-device-box .dem-label {
+            font-size: .72rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: .05em; color: #7f8c8d;
+        }
+        .dem-device-box .dem-name {
+            font-size: .88rem; font-weight: 700;
+            color: #2C3E50; margin-top: .15rem;
+        }
+        .dem-arrow { font-size: 1.4rem; color: #bdc3c7; flex-shrink: 0; }
+        .dem-hint {
+            background: #fff8f0;
+            border: 1.5px solid #fde8c8;
+            border-radius: 12px;
+            padding: .9rem 1rem;
+            font-size: .82rem;
+            color: #7f6a40;
+            margin-bottom: 1.2rem;
+            line-height: 1.6;
+        }
+        .dem-hint strong { color: #E74C3C; }
+        .dem-actions {
+            display: flex; gap: .7rem;
+        }
+        .dem-btn-fix {
+            flex: 1; padding: 12px;
+            background: linear-gradient(135deg, #E74C3C, #C0392B);
+            color: #fff; border: none; border-radius: 12px;
+            font-size: .9rem; font-weight: 700;
+            font-family: 'Poppins', sans-serif; cursor: pointer;
+            transition: all .2s;
+            box-shadow: 0 4px 14px rgba(231,76,60,.3);
+        }
+        .dem-btn-fix:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(231,76,60,.4); }
+        .dem-btn-cancel {
+            flex: 1; padding: 12px;
+            background: #f1f5f9; color: #2C3E50;
+            border: none; border-radius: 12px;
+            font-size: .9rem; font-weight: 600;
+            font-family: 'Poppins', sans-serif; cursor: pointer;
+            transition: all .2s;
+        }
+        .dem-btn-cancel:hover { background: #e2e8f0; }
+
+
+        /* ═══ HOW IT WORKS MODAL ═══ */
+        #hiwModal{display:none;position:fixed;inset:0;z-index:9998;
+            align-items:center;justify-content:center;
+            background:rgba(0,0,0,.65);backdrop-filter:blur(8px);}
+        #hiwModal.hiw-open{display:flex;animation:hiwFade .3s ease;}
+        @keyframes hiwFade{from{opacity:0}to{opacity:1}}
+        .hiw-card{background:#fff;border-radius:28px;padding:2.4rem;
+            width:92%;max-width:880px;max-height:88vh;overflow-y:auto;
+            box-shadow:0 30px 80px rgba(0,0,0,.3);
+            animation:hiwPop .45s cubic-bezier(.34,1.56,.64,1);position:relative;}
+        @keyframes hiwPop{from{transform:scale(.9) translateY(40px);opacity:0}to{transform:none;opacity:1}}
+        .hiw-x{position:absolute;top:1.1rem;right:1.1rem;width:34px;height:34px;
+            background:#f1f5f9;border:none;border-radius:50%;font-size:.95rem;
+            cursor:pointer;display:flex;align-items:center;justify-content:center;
+            transition:all .2s;}
+        .hiw-x:hover{background:#fee2e2;color:#e74c3c;transform:rotate(90deg);}
+        .hiw-head{text-align:center;margin-bottom:1.8rem;}
+        .hiw-tag{display:inline-block;background:#fee2e2;color:#e74c3c;
+            font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
+            padding:4px 14px;border-radius:999px;margin-bottom:.5rem;}
+        .hiw-head h2{font-family:'Poppins',sans-serif;font-size:1.8rem;font-weight:700;color:#2C3E50;margin:0;}
+        .hiw-head h2 span{color:#e74c3c;}
+        .hiw-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;margin-bottom:1.8rem;}
+        .hiw-step{background:#f8fafc;border-radius:18px;padding:1.3rem 1.2rem;
+            border:2px solid #f1f5f9;display:flex;gap:.9rem;align-items:flex-start;transition:all .25s;}
+        .hiw-step:hover{border-color:#e74c3c;box-shadow:0 8px 28px rgba(231,76,60,.1);transform:translateY(-3px);}
+        .hiw-ico{width:52px;height:52px;border-radius:14px;flex-shrink:0;
+            display:flex;align-items:center;justify-content:center;font-size:1.55rem;position:relative;}
+        .hiw-num{position:absolute;top:-6px;right:-6px;width:20px;height:20px;
+            border-radius:50%;font-size:.62rem;font-weight:800;color:#fff;
+            display:flex;align-items:center;justify-content:center;}
+        .hiw-step h4{font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700;color:#2C3E50;margin:0 0 .3rem;}
+        .hiw-step p{font-size:.82rem;color:#64748b;line-height:1.6;margin:0;}
+        .hiw-cta{text-align:center;}
+        .hiw-cta-btn{display:inline-flex;align-items:center;gap:8px;padding:13px 32px;
+            background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff;border:none;
+            border-radius:50px;font-size:.95rem;font-weight:700;
+            font-family:'Poppins',sans-serif;cursor:pointer;
+            box-shadow:0 4px 18px rgba(231,76,60,.35);transition:all .2s;}
+        .hiw-cta-btn:hover{transform:translateY(-2px);box-shadow:0 8px 26px rgba(231,76,60,.42);}
+        @media(max-width:600px){.hiw-grid{grid-template-columns:1fr;}}
+
+
+        /* ═══ DEVICE SELECTED TOAST ═══ */
+        #deviceToast{
+            position:fixed;top:80px;right:20px;z-index:9997;
+            background:#fff;border-radius:16px;
+            box-shadow:0 8px 32px rgba(0,0,0,.15);
+            padding:0; overflow:hidden; min-width:220px;
+            transform:translateX(120%);
+            transition:transform .4s cubic-bezier(.34,1.56,.64,1);
+            pointer-events:none;
+        }
+        #deviceToast.dt-show{transform:translateX(0);}
+        .dt-bar{height:4px;background:linear-gradient(90deg,#e74c3c,#f39c12);}
+        .dt-body{display:flex;align-items:center;gap:.75rem;padding:.85rem 1.1rem;}
+        .dt-icon{width:40px;height:40px;border-radius:10px;flex-shrink:0;
+            background:linear-gradient(135deg,#e74c3c,#c0392b);
+            display:flex;align-items:center;justify-content:center;font-size:1.2rem;}
+        .dt-text .dt-title{font-family:'Poppins',sans-serif;font-size:.78rem;
+            font-weight:700;color:#94a3b8;text-transform:uppercase;
+            letter-spacing:.05em;margin-bottom:.1rem;}
+        .dt-text .dt-name{font-family:'Poppins',sans-serif;font-size:1rem;
+            font-weight:700;color:#2C3E50;}
+        .dt-check{font-size:1.1rem;margin-left:auto;}
+
+
+        /* ═══ UPLOAD TAB BUTTONS ═══ */
+        .upload-tabs {
+            display: flex;
+            gap: .5rem;
+            margin-bottom: 1.5rem;
+            background: #f1f5f9;
+            border-radius: 14px;
+            padding: 5px;
+        }
+        .upload-tab-btn {
+            flex: 1; padding: 10px 14px;
+            border: none; background: transparent;
+            border-radius: 10px;
+            font-size: .88rem; font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+            cursor: pointer; color: #94a3b8;
+            transition: all .2s;
+            display: flex; align-items: center;
+            justify-content: center; gap: 6px;
+        }
+        .upload-tab-btn.active {
+            background: white; color: #e74c3c;
+            box-shadow: 0 2px 10px rgba(0,0,0,.1);
+        }
+
+        /* ═══ CAMERA MODAL ═══ */
+        #cameraModal {
+            display: none; position: fixed; inset: 0;
+            z-index: 99995;
+            background: rgba(0,0,0,.92);
+            align-items: center; justify-content: center;
+            flex-direction: column;
+        }
+        #cameraModal.cam-open { display: flex; animation: camFade .3s ease; }
+        @keyframes camFade { from{opacity:0} to{opacity:1} }
+
+        .cam-wrapper {
+            position: relative; width: 94%; max-width: 680px;
+        }
+        .cam-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: .75rem;
+        }
+        .cam-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.1rem; font-weight: 700; color: white;
+            display: flex; align-items: center; gap: .5rem;
+        }
+        .cam-close-btn {
+            width: 36px; height: 36px;
+            background: rgba(255,255,255,.12); border: none;
+            border-radius: 50%; color: white; font-size: 1rem;
+            cursor: pointer; display: flex; align-items: center;
+            justify-content: center; transition: all .2s;
+        }
+        .cam-close-btn:hover { background: #e74c3c; transform: rotate(90deg); }
+
+        .cam-video-box {
+            position: relative; border-radius: 20px;
+            overflow: hidden; background: #000;
+            aspect-ratio: 4/3; width: 100%;
+        }
+        #cameraFeed {
+            width: 100%; height: 100%;
+            object-fit: cover; display: block;
+            transform: scaleX(-1); /* mirror */
+        }
+        /* guide overlay */
+        .cam-guide {
+            position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            pointer-events: none;
+        }
+        .cam-guide-rect {
+            width: 70%; max-width: 340px;
+            aspect-ratio: 4/3;
+            border: 2.5px dashed rgba(231,76,60,.7);
+            border-radius: 16px;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,.35);
+        }
+        /* guide label */
+        .cam-guide-label {
+            position: absolute; bottom: 14px; left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,.6); color: white;
+            font-size: .75rem; font-weight: 600;
+            padding: 5px 14px; border-radius: 999px;
+            backdrop-filter: blur(4px); white-space: nowrap;
+        }
+        /* countdown ring */
+        .cam-countdown {
+            position: absolute; inset: 0;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(0,0,0,.45);
+        }
+        .cam-countdown.counting { display: flex; }
+        .cam-count-num {
+            font-family: 'Poppins', sans-serif;
+            font-size: 6rem; font-weight: 900; color: white;
+            animation: countPop .8s ease-in-out infinite;
+        }
+        @keyframes countPop {
+            0%,100%{transform:scale(1);opacity:1}
+            50%    {transform:scale(1.2);opacity:.7}
+        }
+
+        .cam-controls {
+            display: flex; align-items: center; justify-content: center;
+            gap: 1rem; margin-top: 1.1rem;
+        }
+        .cam-btn-capture {
+            width: 68px; height: 68px; border-radius: 50%;
+            background: #e74c3c; border: 4px solid white;
+            cursor: pointer; transition: all .2s;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.6rem;
+            box-shadow: 0 4px 20px rgba(231,76,60,.5);
+        }
+        .cam-btn-capture:hover { transform: scale(1.08); background: #c0392b; }
+        .cam-btn-timer, .cam-btn-flip {
+            width: 48px; height: 48px; border-radius: 50%;
+            background: rgba(255,255,255,.12); border: none;
+            color: white; font-size: 1.2rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all .2s;
+        }
+        .cam-btn-timer:hover, .cam-btn-flip:hover {
+            background: rgba(255,255,255,.25);
+        }
+        .cam-btn-timer.active { background: #e74c3c; }
+        .cam-tip {
+            color: rgba(255,255,255,.6); font-size: .78rem;
+            text-align: center; margin-top: .65rem;
+        }
+        /* permission error */
+        .cam-error {
+            display: none; flex-direction: column;
+            align-items: center; justify-content: center;
+            color: white; text-align: center; padding: 3rem;
+            gap: .8rem;
+        }
+        .cam-error.show { display: flex; }
+        .cam-error-icon { font-size: 3rem; }
+        .cam-error h3 { font-family:'Poppins',sans-serif; font-size:1.1rem; font-weight:700; margin:0; }
+        .cam-error p  { font-size:.85rem; color:rgba(255,255,255,.65); margin:0; }
+
+
+        /* ═══ FULLSCREEN LOGIN PAGE ═══ */
+        #lpOverlay {
+            position: fixed; inset: 0; z-index: 999999;
+            display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #1a0505 0%, #2C0A0A 45%, #E74C3C 100%);
+            transition: opacity .5s ease, transform .5s ease;
+        }
+        #lpOverlay.lp-gone {
+            opacity: 0; pointer-events: none; transform: scale(1.04);
+        }
+        .lp-blob {
+            position: absolute; border-radius: 50%;
+            filter: blur(80px); opacity: .2; pointer-events: none;
+        }
+        .lp-blob1 { width:420px;height:420px;background:#E74C3C;top:-130px;right:-100px; }
+        .lp-blob2 { width:300px;height:300px;background:#C0392B;bottom:-80px;left:-80px; }
+        .lp-card {
+            position: relative; z-index: 2;
+            background: #fff; border-radius: 28px;
+            padding: 2.6rem 2.2rem;
+            width: 90%; max-width: 400px;
+            box-shadow: 0 40px 100px rgba(0,0,0,.5);
+            animation: lpRise .55s cubic-bezier(.34,1.56,.64,1);
+        }
+        @keyframes lpRise {
+            from { transform: translateY(60px) scale(.95); opacity: 0 }
+            to   { transform: none; opacity: 1 }
+        }
+        .lp-logo { text-align: center; margin-bottom: 1.6rem; }
+        .lp-logo-icon {
+            width: 68px; height: 68px; border-radius: 20px;
+            background: linear-gradient(135deg,#E74C3C,#C0392B);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2rem; margin: 0 auto .7rem;
+            box-shadow: 0 8px 24px rgba(231,76,60,.4);
+        }
+        .lp-logo h2 { font-family:'Poppins',sans-serif; font-size:1.45rem; font-weight:700; color:#2C3E50; margin:0; }
+        .lp-logo p  { font-size:.78rem; color:#95a5a6; margin:.2rem 0 0; }
+        .lp-tabs {
+            display: flex; background: #f1f5f9;
+            border-radius: 12px; padding: 4px; gap: 4px; margin-bottom: 1.3rem;
+        }
+        .lp-tab {
+            flex: 1; padding: 9px; border: none; background: transparent;
+            border-radius: 9px; font-size: .86rem; font-weight: 600;
+            font-family: 'Poppins', sans-serif; cursor: pointer;
+            color: #94a3b8; transition: all .2s;
+        }
+        .lp-tab.active { background: #fff; color: #E74C3C; box-shadow: 0 2px 10px rgba(0,0,0,.1); }
+        .lp-field { margin-bottom: .85rem; }
+        .lp-field label { display:block; font-size:.76rem; font-weight:600; color:#2C3E50; margin-bottom:.35rem; font-family:'Poppins',sans-serif; }
+        .lp-field input {
+            width: 100%; padding: 11px 14px; border: 2px solid #e2e8f0;
+            border-radius: 11px; font-size: .92rem; outline: none;
+            transition: border .2s; box-sizing: border-box; color: #2C3E50;
+        }
+        .lp-field input:focus { border-color: #E74C3C; }
+        .lp-submit {
+            width: 100%; padding: 13px;
+            background: linear-gradient(135deg,#E74C3C,#C0392B);
+            color: #fff; border: none; border-radius: 12px;
+            font-size: .95rem; font-weight: 700;
+            font-family: 'Poppins', sans-serif; cursor: pointer;
+            box-shadow: 0 4px 18px rgba(231,76,60,.35);
+            transition: all .2s; margin-top: .3rem;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .lp-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 26px rgba(231,76,60,.42); }
+        .lp-or {
+            text-align: center; font-size: .76rem; color: #bdc3c7;
+            margin: .85rem 0; position: relative;
+        }
+        .lp-or::before,.lp-or::after {
+            content:''; position:absolute; top:50%; width:42%; height:1px; background:#e2e8f0;
+        }
+        .lp-or::before{left:0;} .lp-or::after{right:0;}
+        .lp-guest {
+            width: 100%; padding: 11px; background: #fff; color: #2C3E50;
+            border: 2px solid #e2e8f0; border-radius: 12px;
+            font-size: .86rem; font-weight: 600;
+            font-family: 'Poppins', sans-serif; cursor: pointer; transition: all .2s;
+        }
+        .lp-guest:hover { border-color: #E74C3C; color: #E74C3C; }
+
+
+        /* ═══ WELCOME MODAL ═══ */
+        #welcomeModal {
+            display: none; position: fixed; inset: 0; z-index: 999998;
+            align-items: center; justify-content: center;
+            background: rgba(0,0,0,.6); backdrop-filter: blur(8px);
+        }
+        #welcomeModal.wm-open { display: flex; animation: wmFade .3s ease; }
+        @keyframes wmFade { from{opacity:0} to{opacity:1} }
+        .wm-card {
+            background: #fff; border-radius: 28px; overflow: hidden;
+            width: 92%; max-width: 400px; text-align: center;
+            box-shadow: 0 40px 100px rgba(0,0,0,.3);
+            animation: wmPop .5s cubic-bezier(.34,1.56,.64,1);
+        }
+        @keyframes wmPop { from{transform:scale(.8);opacity:0} to{transform:scale(1);opacity:1} }
+        .wm-top {
+            padding: 2.5rem 2rem 1.5rem;
+            background: linear-gradient(135deg,#1a0505,#c0392b,#E74C3C);
+            background-size: 200% 200%; animation: wmGrad 4s ease infinite;
+            position: relative; overflow: hidden;
+        }
+        @keyframes wmGrad { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+        .wm-top::before {
+            content:''; position:absolute; width:200px; height:200px;
+            background:rgba(255,255,255,.07); border-radius:50%;
+            top:-80px; right:-60px;
+        }
+        .wm-avatar {
+            width: 90px; height: 90px; border-radius: 50%; margin: 0 auto 1rem;
+            background: rgba(255,255,255,.2); border: 4px solid rgba(255,255,255,.4);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2.8rem; position: relative; z-index: 1;
+            animation: wmBounce 1s cubic-bezier(.34,1.56,.64,1);
+        }
+        @keyframes wmBounce { from{transform:scale(0)} to{transform:scale(1)} }
+        .wm-top h2 {
+            font-family:'Poppins',sans-serif; font-size: 1.5rem; font-weight:800;
+            color:#fff; margin:0 0 .3rem; position:relative; z-index:1;
+        }
+        .wm-top p { font-size:.85rem; color:rgba(255,255,255,.85); margin:0; position:relative;z-index:1; }
+        .wm-body { padding: 1.5rem 1.8rem 1.8rem; }
+        .wm-stats {
+            display: flex; gap: .8rem; margin-bottom: 1.3rem;
+        }
+        .wm-stat {
+            flex:1; background:#f8fafc; border-radius:14px; padding:.8rem .5rem;
+            border:1.5px solid #f1f5f9;
+        }
+        .wm-stat .ws-num { font-family:'Poppins',sans-serif; font-size:1.3rem; font-weight:800; color:#E74C3C; }
+        .wm-stat .ws-lbl { font-size:.68rem; color:#94a3b8; font-weight:600; margin-top:.1rem; }
+        .wm-go-btn {
+            width:100%; padding:13px;
+            background:linear-gradient(135deg,#E74C3C,#C0392B);
+            color:#fff; border:none; border-radius:14px;
+            font-size:.95rem; font-weight:700;
+            font-family:'Poppins',sans-serif; cursor:pointer;
+            box-shadow:0 4px 16px rgba(231,76,60,.35);
+            transition:all .2s;
+        }
+        .wm-go-btn:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(231,76,60,.45); }
+
+
+        @keyframes detectReveal {
+            from { opacity: 0; transform: translateY(30px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        /* team section slide-in */
+        @keyframes teamSlide {
+            from { opacity: 0; transform: translateY(40px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .team-section.team-visible {
+            animation: teamSlide .45s ease;
+        }
+
+
+        /* ═══ OTP MODAL ═══ */
+        #otpModal {
+            display: none; position: fixed; inset: 0; z-index: 99997;
+            align-items: center; justify-content: center;
+            background: rgba(0,0,0,.65); backdrop-filter: blur(8px);
+        }
+        #otpModal.otp-open { display: flex; animation: otpFade .3s ease; }
+        @keyframes otpFade { from{opacity:0} to{opacity:1} }
+        .otp-card {
+            background: #fff; border-radius: 28px; overflow: hidden;
+            width: 92%; max-width: 380px; text-align: center;
+            box-shadow: 0 40px 100px rgba(0,0,0,.3);
+            animation: otpPop .5s cubic-bezier(.34,1.56,.64,1);
+        }
+        @keyframes otpPop { from{transform:scale(.85);opacity:0} to{transform:scale(1);opacity:1} }
+        .otp-header {
+            background: linear-gradient(135deg,#1a0505,#e74c3c);
+            padding: 1.8rem 1.5rem 1.4rem; position: relative; overflow: hidden;
+        }
+        .otp-header::before {
+            content:''; position:absolute; width:180px; height:180px;
+            border-radius:50%; background:rgba(255,255,255,.06); top:-60px; right:-50px;
+        }
+        .otp-header h3 {
+            font-family:'Poppins',sans-serif; font-size:1.2rem; font-weight:800;
+            color:#fff; margin:0 0 .25rem; position:relative; z-index:1;
+        }
+        .otp-header p { font-size:.82rem; color:rgba(255,255,255,.85); margin:0; position:relative; z-index:1; }
+        .otp-body { padding: 1.6rem 1.5rem 1.8rem; }
+        .otp-box {
+            display: flex; gap: .5rem; justify-content: center; margin: .8rem 0 1.2rem;
+        }
+        .otp-digit {
+            width: 46px; height: 56px; border-radius: 12px;
+            background: linear-gradient(135deg,#fff5f5,#fde8e8);
+            border: 2px solid #fca5a5;
+            display: flex; align-items: center; justify-content: center;
+            font-family:'Poppins',sans-serif; font-size: 1.5rem; font-weight: 900;
+            color: #e74c3c; box-shadow: 0 4px 12px rgba(231,76,60,.15);
+            animation: digitPop .4s cubic-bezier(.34,1.56,.64,1) both;
+        }
+        .otp-digit:nth-child(1){animation-delay:.05s}
+        .otp-digit:nth-child(2){animation-delay:.1s}
+        .otp-digit:nth-child(3){animation-delay:.15s}
+        .otp-digit:nth-child(4){animation-delay:.2s}
+        .otp-digit:nth-child(5){animation-delay:.25s}
+        .otp-digit:nth-child(6){animation-delay:.3s}
+        @keyframes digitPop { from{transform:scale(0) rotate(-10deg);opacity:0} to{transform:scale(1) rotate(0);opacity:1} }
+        .otp-desc { font-size:.83rem; color:#64748b; line-height:1.6; margin-bottom:1.2rem; }
+        .otp-desc strong { color:#e74c3c; }
+        .otp-copy-btn {
+            width:100%; padding:12px;
+            background: linear-gradient(135deg,#e74c3c,#c0392b);
+            color:#fff; border:none; border-radius:12px;
+            font-size:.9rem; font-weight:700; font-family:'Poppins',sans-serif;
+            cursor:pointer; transition:all .2s;
+            box-shadow: 0 4px 14px rgba(231,76,60,.35);
+        }
+        .otp-copy-btn:hover { transform:translateY(-2px); box-shadow:0 8px 22px rgba(231,76,60,.42); }
+        .otp-close-btn {
+            width:100%; padding:11px; margin-top:.6rem;
+            background:#f1f5f9; color:#475569;
+            border:1.5px solid #e2e8f0; border-radius:12px;
+            font-size:.88rem; font-weight:600; font-family:'Poppins',sans-serif;
+            cursor:pointer; transition:all .2s;
+        }
+        .otp-close-btn:hover { background:#e2e8f0; }
+
+
+        /* ═══ OTP RESULT BANNER ═══ */
+        .otp-result-banner {
+            margin: 1.2rem 0 0;
+            background: linear-gradient(135deg, #fff5f5, #fde8e8);
+            border: 2px solid #fca5a5;
+            border-radius: 18px;
+            padding: 1.1rem 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            cursor: pointer;
+            transition: all .2s;
+        }
+        .otp-result-banner:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(231,76,60,.15);
+        }
+        .otp-banner-icon {
+            width: 48px; height: 48px; border-radius: 13px;
+            background: linear-gradient(135deg,#e74c3c,#c0392b);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem; flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(231,76,60,.3);
+        }
+        .otp-banner-text .obt-label {
+            font-size: .72rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: .07em; color: #94a3b8; margin-bottom: .2rem;
+            font-family: 'Poppins', sans-serif;
+        }
+        .otp-banner-text .obt-code {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.6rem; font-weight: 900; color: #e74c3c;
+            letter-spacing: .15em; line-height: 1;
+        }
+        .otp-banner-text .obt-hint {
+            font-size: .75rem; color: #64748b; margin-top: .2rem;
+        }
+        .otp-banner-copy {
+            margin-left: auto; padding: 8px 16px;
+            background: linear-gradient(135deg,#e74c3c,#c0392b);
+            color: #fff; border: none; border-radius: 10px;
+            font-size: .8rem; font-weight: 700;
+            font-family: 'Poppins', sans-serif; cursor: pointer;
+            box-shadow: 0 3px 10px rgba(231,76,60,.3);
+            transition: all .2s; white-space: nowrap;
+        }
+        .otp-banner-copy:hover { transform: translateY(-1px); }
+
+
+        #gpsToast {
+            position:fixed; bottom:24px; left:50%;
+            transform:translateX(-50%) translateY(80px);
+            z-index:9996; background:#1e293b; color:#fff;
+            border-radius:50px; padding:10px 22px;
+            display:flex; align-items:center; gap:.6rem;
+            font-size:.85rem; font-weight:600; font-family:'Poppins',sans-serif;
+            box-shadow:0 8px 30px rgba(0,0,0,.3);
+            transition:transform .4s cubic-bezier(.34,1.56,.64,1), opacity .4s;
+            opacity:0; pointer-events:none; white-space:nowrap;
+        }
+        #gpsToast.gps-show { transform:translateX(-50%) translateY(0); opacity:1; }
+        .gps-dot { width:8px;height:8px;border-radius:50%;background:#27ae60;flex-shrink:0; }
+
+    </style>
+</head>
+<body data-theme="light">
+    <!-- ═══ FULLSCREEN LOGIN PAGE ═══ -->
+    <div id="lpOverlay">
+        <div class="lp-blob lp-blob1"></div>
+        <div class="lp-blob lp-blob2"></div>
+        <div class="lp-card">
+            <div class="lp-logo">
+                <div class="lp-logo-icon">🔧</div>
+                <h2>Fix Nearby</h2>
+                <p>AI-Powered Device Damage Detection</p>
+            </div>
+            <div class="lp-tabs">
+                <button class="lp-tab active" id="lpTabSI" onclick="lpSwitchTab('signin')">Sign In</button>
+                <button class="lp-tab" id="lpTabSU" onclick="lpSwitchTab('signup')">Sign Up</button>
+            </div>
+            <!-- Sign In -->
+            <div id="lpSigninForm">
+                <div class="lp-field"><label>Email</label>
+                    <input type="email" id="lpSIEmail" placeholder="your@email.com"></div>
+                <div class="lp-field"><label>Password</label>
+                    <input type="password" id="lpSIPass" placeholder="••••••••"></div>
+                <button class="lp-submit" onclick="lpDoLogin()">Sign In →</button>
+                <div class="lp-or">or</div>
+                <button class="lp-guest" onclick="lpGuest()">👤 Continue as Guest</button>
+            </div>
+            <!-- Sign Up -->
+            <div id="lpSignupForm" style="display:none">
+                <div style="display:flex;gap:.6rem">
+                    <div class="lp-field" style="flex:1"><label>First Name</label>
+                        <input type="text" id="lpSUFirst" placeholder="Mohamed"></div>
+                    <div class="lp-field" style="flex:1"><label>Last Name</label>
+                        <input type="text" id="lpSULast" placeholder="Yunus"></div>
+                </div>
+                <div class="lp-field"><label>Date of Birth</label>
+                    <input type="date" id="lpSUDob" max="2010-01-01" style="color:#2C3E50"></div>
+                <div class="lp-field"><label>Email</label>
+                    <input type="email" id="lpSUEmail" placeholder="your@email.com"></div>
+                <div class="lp-field"><label>Password</label>
+                    <input type="password" id="lpSUPass" placeholder="Create password"></div>
+                <button class="lp-submit" onclick="lpDoSignup()">Create Account →</button>
+                <div class="lp-or">or</div>
+                <button class="lp-guest" onclick="lpGuest()">👤 Continue as Guest</button>
+            </div>
+        </div>
+    </div>
+
+
+<!-- LOADER -->
+    <div id="loader">
+        <div class="loader-content">
+            <div class="loader-icon">🔧</div>
+            <div class="loader-text">Fix Nearby</div>
+            <div class="loader-subtext">AI-Powered Repair Diagnosis</div>
+            <div class="loader-progress">
+                <div class="loader-progress-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST CONTAINER -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- NAVIGATION -->
+    <nav class="main-nav">
+        <div class="nav-container">
+            <a href="#" class="logo">
+                <div class="logo-icon">🔧</div>
+                <span>Fix Nearby</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="#home" class="active">Home</a></li>
+                <li><a href="#" onclick="goToDetect();return false;">Detect</a></li>
+                <li><a href="#history" onclick="showHistory()">History</a>
+                <li><a href="#" onclick="toggleAbout();return false;">About</a></li>
+                <li><a href="#help">Help</a></li>
+                <li><a href="#" class="btn-nav" onclick="openLogin();return false;">Login</a></li>
+            </ul>
+            <div class="mobile-menu-toggle">☰</div>
+        </div>
+    </nav>
+
+    <!-- HERO SECTION -->
+    <section class="hero" id="home">
+        <div class="hero-bg-blobs">
+            <div class="blob blob-1"></div>
+            <div class="blob blob-2"></div>
+        </div>
+        <div class="hero-content">
+            <div class="hero-text">
+                <div class="hero-badge">
+                    <span>✨</span>
+                    <span>AI-Powered Damage Detection</span>
+                </div>
+                <h1 class="hero-title">
+                    Fix Your Devices <span class="highlight">Smarter</span>
+                </h1>
+                <p class="hero-subtitle">
+                    AI-powered damage detection for mobile phones and laptops. Get instant diagnosis and connect with trusted repair experts nearby.
+                </p>
+                <div class="hero-buttons">
+                    <button onclick="goToDetect()" class="btn-primary" style="border:none;cursor:pointer;font-family:inherit;font-size:inherit">
+                        <span>🔍</span>
+                        Start Detection
+                    </button>
+                    <button onclick="openHIW()" class="btn-secondary" style="border:none;cursor:pointer;font-family:inherit;font-size:inherit;background:transparent">
+                        <span>▶</span>
+                        How It Works
+                    </button>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <span class="stat-number" data-count="2">0</span>
+                        <span class="stat-label">Device Types</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" data-count="62" data-suffix="%">0</span>
+                        <span class="stat-label">Avg. Accuracy</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">&lt;3s</span>
+                        <span class="stat-label">Detection Time</span>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="floating-cards">
+                    <div class="float-card float-card-1">
+                        <span>💔</span>
+                        <span>Screen Crack Detected</span>
+                    </div>
+                    <div class="float-card float-card-2">
+                        <span>🔧</span>
+                        <span>Repair: ₹2,500</span>
+                    </div>
+                    <div class="float-card float-card-3">
+                        <span>✅</span>
+                        <span>94% Confidence</span>
+                    </div>
+                </div>
+                <div class="hero-device">📱</div>
+            </div>
+        </div>
+        <div class="scroll-indicator">↓</div>
+    </section>
+
+    <!-- MAIN APP SECTION -->
+
+
+    <section class="app-section" id="detect" style="display:none">
+        <div class="section-header" data-aos="fade-up">
+            <h2 class="section-title">Detect Damage</h2>
+            <p class="section-subtitle">Select your device type and upload a photo for instant AI analysis</p>
+        </div>
+
+        <!-- Device Selector -->
+        <div class="device-grid" id="deviceGrid">
+            <div class="device-card" data-device="mobile">
+                <div class="device-icon">📱</div>
+                <div class="device-name">Mobile Phone</div>
+            </div>
+            <div class="device-card" data-device="laptop">
+                <div class="device-icon">💻</div>
+                <div class="device-name">Laptop</div>
+            </div>
+
+        </div>
+
+        <!-- Upload Zone -->
+        <div class="upload-container">
+            <!-- Upload / Camera Tabs -->
+            <div class="upload-tabs">
+                <button class="upload-tab-btn active" id="tabUpload" onclick="switchUploadTab('upload')">
+                    📁 Upload File
+                </button>
+                <button class="upload-tab-btn" id="tabCamera" onclick="switchUploadTab('camera')">
+                    📷 Use Camera
+                </button>
+            </div>
+
+            <div class="upload-zone" id="uploadZone">
+                <div class="upload-icon">📤</div>
+                <div class="upload-text">
+                    <h3>Drop your image here</h3>
+                    <p>or click to browse. Supports JPG, PNG up to 10MB</p>
+                </div>
+                <button class="upload-btn" id="chooseFileBtn">
+                    <span>📁</span>
+                    Choose File
+                </button>
+                <input type="file" id="fileInput" accept="image/*">
+            </div>
+        </div>
+
+        <!-- Preview -->
+        <div class="preview-box" id="previewBox">
+            <div class="preview-header">
+                <div class="preview-title">
+                    <span>📷</span>
+                    <span id="previewFilename">image.jpg</span>
+                </div>
+                <button class="preview-remove" id="previewRemove" title="Remove">✕</button>
+            </div>
+            <img class="preview-image" id="previewImage" src="" alt="Preview">
+            <!-- Upload Progress Bar -->
+            <div class="upload-progress-wrap" id="uploadProgressWrap">
+                <div class="upload-progress-fill" id="uploadProgressFill"></div>
+            </div>
+            <div class="upload-progress-label" id="uploadProgressLabel">Uploading...</div>
+
+            <button class="analyze-btn" id="analyzeBtn">
+                <span>🔍</span>
+                Analyze Damage
+            </button>
+        </div>
+
+        <!-- Results -->
+        <div class="result-container" id="resultContainer">
+            <div class="result-header">
+                <div class="result-badge success" id="resultBadge">
+                    <span>✓</span>
+                    <span>Damage Detected</span>
+                </div>
+                <h3 class="result-title">Analysis Complete</h3>
+            </div>
+            <div id="damageCards"></div>
+            <!-- OTP Banner -->
+            <div class="otp-result-banner" id="otpResultBanner" style="display:none" onclick="showOTPModal(document.getElementById('otpBannerCode').textContent, '')">
+                <div class="otp-banner-icon">🔐</div>
+                <div class="otp-banner-text">
+                    <div class="obt-label">Your Service OTP</div>
+                    <div class="obt-code" id="otpBannerCode">------</div>
+                    <div class="obt-hint">Show this to the repair shop</div>
+                </div>
+                <button class="otp-banner-copy" onclick="event.stopPropagation();copyOTPBanner()">📋 Copy</button>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" id="emptyState">
+            <div class="empty-icon">🔍</div>
+            <h3>No damage detected</h3>
+            <p>Try uploading a clearer image or different angle</p>
+        </div>
+
+        <!-- Shops -->
+        <div class="shops-section" id="shopsSection">
+            <div class="section-header-flex">
+                <h3 class="section-title" style="margin: 0; font-size: 24px;">Nearby Repair Shops</h3>
+                <span style="color: var(--text-muted); font-size: 14px;">📍 2.5km radius</span>
+            </div>
+            <div id="shopsList"></div>
+        </div>
+
+        <!-- History -->
+        <div class="history-section" id="historySection">
+            <h3 class="section-title" style="text-align: left; font-size: 24px;">Recent Detections</h3>
+            <div id="historyList"></div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+
+    <!-- ABOUT & TECH STACK SECTION -->
+    <section class="about-section" id="about" style="display:none">
+        <div class="about-grid">
+            <div class="about-text" data-aos="fade-right">
+                <h2>About <span>Fix Nearby</span></h2>
+                <p>Fix Nearby is an AI-powered device damage detection platform built as an academic project. It uses YOLOv8 deep learning models to identify damage in mobile phones and laptops from a single photo, then connects users with nearby repair shops using OpenStreetMap.</p>
+                <p><strong>Domain:</strong> Artificial Intelligence & Computer Vision<br>
+                <strong>Technology:</strong> YOLOv8, Flask, MongoDB, OpenStreetMap<br>
+                <strong>Models:</strong> Mobile (62.2% mAP50) · Laptop (48.6% mAP50)</p>
+                <div class="about-badges">
+                    <span class="about-badge">YOLOv8</span>
+                    <span class="about-badge">Flask API</span>
+                    <span class="about-badge">MongoDB</span>
+                    <span class="about-badge">OpenStreetMap</span>
+                    <span class="about-badge">Computer Vision</span>
+                    <span class="about-badge">Deep Learning</span>
+                </div>
+            </div>
+            <div class="tech-grid-about" data-aos="fade-left">
+                <div class="tech-card-about">
+                    <div class="ticon">🧠</div>
+                    <h4>YOLOv8</h4>
+                    <p>State-of-the-art object detection model</p>
+                </div>
+                <div class="tech-card-about">
+                    <div class="ticon">🐍</div>
+                    <h4>Flask</h4>
+                    <p>Python backend REST API</p>
+                </div>
+                <div class="tech-card-about">
+                    <div class="ticon">🍃</div>
+                    <h4>MongoDB</h4>
+                    <p>NoSQL database for predictions</p>
+                </div>
+                <div class="tech-card-about">
+                    <div class="ticon">🗺️</div>
+                    <h4>OpenStreetMap</h4>
+                    <p>Real-time shop discovery</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- TEAM SECTION -->
+    <section class="team-section" id="team" style="display:none">
+        <div style="text-align:center;margin-bottom:2rem">
+            <p style="font-size:.8rem;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem">Our Team</p>
+            <h2 class="section-title" style="margin-bottom:.5rem">Meet the <span style="color:var(--primary)">Developers</span></h2>
+        </div>
+        <div class="team-grid">
+            <div class="team-card" data-aos="zoom-in">
+                <div class="team-avatar">👨‍💻</div>
+                <div class="team-name">Mohamed Yunus</div>
+                <div class="team-role">AI & Backend Developer</div>
+            </div>
+            <div class="team-card" data-aos="zoom-in" data-aos-delay="100">
+                <div class="team-avatar">👨‍🎨</div>
+                <div class="team-name">Team Member 2</div>
+                <div class="team-role">Frontend Developer</div>
+            </div>
+            <div class="team-card" data-aos="zoom-in" data-aos-delay="200">
+                <div class="team-avatar">👩‍💼</div>
+                <div class="team-name">Team Member 3</div>
+                <div class="team-role">Data & Testing</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Team Toggle Button -->
+    <div id="teamToggleWrap" style="text-align:center;padding:2.5rem 1rem;background:#f8fafc;border-top:1px solid #e2e8f0;">
+        <p style="font-size:.8rem;font-weight:700;color:#e74c3c;text-transform:uppercase;letter-spacing:.1em;margin-bottom:.75rem">Our Team</p>
+        <button onclick="toggleTeam()" id="teamToggleBtn"
+            style="display:inline-flex;align-items:center;gap:.6rem;padding:13px 28px;
+                   background:linear-gradient(135deg,#E74C3C,#C0392B);color:#fff;
+                   border:none;border-radius:50px;font-size:.95rem;font-weight:700;
+                   font-family:'Poppins',sans-serif;cursor:pointer;
+                   box-shadow:0 4px 18px rgba(231,76,60,.35);transition:all .2s;">
+            👥 Meet the Developers
+        </button>
+    </div>
+
+    <footer class="main-footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <span style="font-size: 32px;">🔧</span>
+                <span>Fix Nearby</span>
+            </div>
+            <p class="footer-text">AI-powered repair diagnosis connecting you with trusted service experts</p>
+            <div class="footer-links">
+                <a href="#">About</a>
+                <a href="#">Privacy</a>
+                <a href="#">Terms</a>
+                <a href="#">Contact</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 Fix Nearby. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- BOTTOM NAV (Mobile) -->
+    <nav class="bottom-nav">
+        <a href="#home" class="nav-item active">
+            <span>🏠</span>
+            <span>Home</span>
+        </a>
+        <a href="#detect" class="nav-item">
+            <span>🔍</span>
+            <span>Detect</span>
+        </a>
+        <a href="#" class="nav-item" onclick="showHistory()">
+            <span>📋</span>
+            <span>History</span>
+        </a>
+        <a href="#settings" class="nav-item">
+            <span>⚙️</span>
+            <span>Settings</span>
+        </a>
+    </nav>
+
+    <script>
+        // ===== CONFIG =====
+        const API_BASE_URL = 'http://localhost:5000/api';
+        let currentDevice = null;
+        let currentFile = null;
+        let currentFilename = null;
+        let detectionHistory = JSON.parse(localStorage.getItem('fixNearbyHistory') || '[]');
+
+        // ===== LOADER =====
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('loader').classList.add('hidden');
+            }, 2200);
+
+            // ===== TRANSPARENT NAVBAR ON SCROLL =====
+            const mainNav = document.querySelector('.main-nav');
+            if (mainNav) {
+                function handleNavScroll() {
+                    if (window.scrollY > 80) {
+                        mainNav.classList.add('scrolled');
+                    } else {
+                        mainNav.classList.remove('scrolled');
+                    }
+                }
+                window.addEventListener('scroll', handleNavScroll, { passive: true });
+                handleNavScroll();
+            }
+
+            // ===== BACK TO TOP BUTTON =====
+            const backToTopBtn = document.getElementById('backToTop');
+            if (backToTopBtn) {
+                window.addEventListener('scroll', () => {
+                    if (window.scrollY > 400) {
+                        backToTopBtn.classList.add('show');
+                    } else {
+                        backToTopBtn.classList.remove('show');
+                    }
+                }, { passive: true });
+            }
+        });
+
+        // ===== TOAST SYSTEM =====
+        function showToast(title, message, type = 'success', duration = 4000) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icons = {
+                success: '✓',
+                error: '✕',
+                warning: '⚠'
+            };
+            
+            toast.innerHTML = `
+                <span class="toast-icon">${icons[type]}</span>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+            `;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => toast.remove(), 400);
+            }, duration);
+        }
+
+        // ===== THEME TOGGLE =====
+        // Auto-detect preference
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.body.setAttribute('data-theme', 'dark');
+        }
+
+        // ===== NAVIGATION =====
+        document.querySelectorAll('.nav-links a, .bottom-nav a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                if (link.getAttribute('href')?.startsWith('#')) {
+                    document.querySelectorAll('.nav-item, .nav-links a').forEach(l => l.classList.remove('active'));
+                    link.classList.add('active');
+                }
+            });
+        });
+
+        // ===== DEVICE SELECTION =====
+        document.querySelectorAll('.device-card').forEach(card => {
+            card.addEventListener('click', () => {
+                document.querySelectorAll('.device-card').forEach(c => c.classList.remove('active'));
+                card.classList.add('active');
+                currentDevice = card.dataset.device;
+                
+                // Update hero device icon
+                const deviceIcons = {
+                    mobile: '📱',
+                    laptop: '💻',
+                };
+                document.querySelector('.hero-device').textContent = deviceIcons[currentDevice];
+                
+                showDeviceToast(card.querySelector('.device-name').textContent, currentDevice);
+            });
+        });
+
+        // ===== FILE UPLOAD =====
+        const fileInput = document.getElementById('fileInput');
+        const uploadZone = document.getElementById('uploadZone');
+        const previewBox = document.getElementById('previewBox');
+        const previewImage = document.getElementById('previewImage');
+        const previewFilename = document.getElementById('previewFilename');
+        const previewRemove = document.getElementById('previewRemove');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+
+        // Drag & Drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadZone.addEventListener(eventName, () => uploadZone.classList.add('dragover'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadZone.addEventListener(eventName, () => uploadZone.classList.remove('dragover'), false);
+        });
+
+        // Upload button click
+        var _dialogBusy = false;
+        function openFilePicker() {
+            if (_dialogBusy) return;
+            _dialogBusy = true;
+            fileInput.click();
+            setTimeout(function(){ _dialogBusy = false; }, 1500);
+        }
+        const chooseFileBtn = document.getElementById('chooseFileBtn');
+        if (chooseFileBtn) {
+            chooseFileBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                openFilePicker();
+            });
+        }
+        uploadZone.addEventListener('click', (e) => {
+            if (e.target.id === 'chooseFileBtn' || e.target.tagName === 'INPUT' || e.target.tagName === 'LABEL') return;
+            openFilePicker();
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            const files = e.dataTransfer.files;
+            if (files.length) handleFile(files[0]);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) handleFile(e.target.files[0]);
+        });
+
+        // ─── device mismatch modal helpers ───
+        let _pendingFile = null;
+        let _detectedDevice = null;
+
+        function demSwitchDevice() {
+            // switch device selection to detected device
+            document.querySelectorAll('.device-card').forEach(c => {
+                c.classList.toggle('active', c.dataset.device === _detectedDevice);
+            });
+            currentDevice = _detectedDevice;
+            const icons = { mobile:'📱', laptop:'💻' };
+            const heroD = document.querySelector('.hero-device');
+            if (heroD) heroD.textContent = icons[currentDevice] || '📱';
+            demClose();
+            // now load the file
+            _loadFileToPreview(_pendingFile);
+            showToast('Device Switched', 'Switched to ' + (_detectedDevice==='mobile'?'Mobile Phone':'Laptop'), 'success', 2500);
+        }
+
+        function demClose() {
+            document.getElementById('deviceErrorModal').classList.remove('dem-open');
+            document.body.style.overflow = '';
+            _pendingFile = null;
+        }
+
+        function _loadFileToPreview(file) {
+            currentFile = file;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                previewImage.src = ev.target.result;
+                previewFilename.textContent = file.name;
+                uploadZone.style.display = 'none';
+                previewBox.classList.add('show');
+                showToast('Image Ready', 'Click analyze to detect damage', 'success', 3000);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleFile(file, fromCamera) {
+            if (!currentDevice) {
+                showToast('Select Device First', 'Please choose Mobile Phone or Laptop before uploading', 'error', 3000);
+                document.getElementById('deviceGrid').style.animation = 'none';
+                setTimeout(() => {
+                    document.getElementById('deviceGrid').style.animation = 'pulse 0.4s ease 3';
+                }, 10);
+                return;
+            }
+            if (!file.type.startsWith('image/')) {
+                showToast('Invalid File', 'Please upload an image file (JPG, PNG)', 'error');
+                return;
+            }
+            if (file.size > 10 * 1024 * 1024) {
+                showToast('File Too Large', 'Maximum size is 10MB', 'error');
+                return;
+            }
+
+            // ── Aspect ratio device validation (skip for camera captures) ──
+            if (fromCamera) {
+                // Camera images skip ratio check — load directly
+                _loadFileToPreview(file);
+                return;
+            }
+            const img = new Image();
+            const objURL = URL.createObjectURL(file);
+            img.onload = () => {
+                URL.revokeObjectURL(objURL);
+                const ratio = img.width / img.height;
+                // portrait → mobile (<0.85), landscape → laptop (>1.15)
+                let detectedDevice = null;
+                if (ratio < 0.85)       detectedDevice = 'mobile';
+                else if (ratio > 1.15)  detectedDevice = 'laptop';
+
+                if (detectedDevice && detectedDevice !== currentDevice) {
+                    // Show mismatch modal
+                    _pendingFile = file;
+                    _detectedDevice = detectedDevice;
+                    const sel = currentDevice === 'mobile' ? 'Mobile Phone' : 'Laptop';
+                    const det = detectedDevice  === 'mobile' ? 'Mobile Phone' : 'Laptop';
+                    const selEmoji = currentDevice === 'mobile' ? '📱' : '💻';
+                    const detEmoji = detectedDevice  === 'mobile' ? '📱' : '💻';
+                    document.getElementById('demSelectedEmoji').textContent = selEmoji;
+                    document.getElementById('demSelectedName').textContent  = sel;
+                    document.getElementById('demUploadedEmoji').textContent = detEmoji;
+                    document.getElementById('demUploadedName').textContent  = det;
+                    document.getElementById('demSubtitle').textContent = `You selected ${sel} but uploaded a ${det} image`;
+                    document.getElementById('demSwitchTo').textContent    = det;
+                    document.getElementById('demUploadHint').textContent  = sel;
+                    document.getElementById('demSwitchLabel').textContent = det;
+                    document.getElementById('deviceErrorModal').classList.add('dem-open');
+                    document.body.style.overflow = 'hidden';
+                } else {
+                    _loadFileToPreview(file);
+                    // Device matches — show success
+                    if (detectedDevice !== null) {
+                        const dName = currentDevice === 'mobile' ? 'Mobile Phone' : 'Laptop';
+                        setTimeout(() => {
+                            showDeviceGoodToast(dName);
+                        }, 600);
+                    }
+                }
+            };
+            img.src = objURL;
+        }
+
+        previewRemove.addEventListener('click', () => {
+            currentFile = null;
+            previewImage.src = '';
+            fileInput.value = '';
+            previewBox.classList.remove('show');
+            uploadZone.style.display = 'block';
+            document.getElementById('resultContainer').classList.remove('show');
+            document.getElementById('shopsSection').style.display = 'none';
+        });
+
+        // ===== ANALYZE =====
+        analyzeBtn.addEventListener('click', async () => {
+            if (!currentFile) {
+                showToast('No Image', 'Please upload an image first', 'error');
+                return;
+            }
+
+            analyzeBtn.disabled = true;
+            analyzeBtn.innerHTML = '<div class="spinner"></div> Analyzing...';
+
+            try {
+                // Step 1: Upload with progress simulation
+                showUploadProgress(10, 'Preparing upload...');
+                const formData = new FormData();
+                formData.append('file', currentFile);
+                formData.append('device_type', currentDevice);
+
+                showUploadProgress(35, 'Uploading image...');
+                const uploadRes = await fetch(`${API_BASE_URL}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                showUploadProgress(65, 'Analyzing damage...');
+                const uploadData = await uploadRes.json();
+
+                if (!uploadData.success) {
+                    throw new Error(uploadData.message || 'Upload failed');
+                }
+
+                currentFilename = uploadData.filename;
+
+                showUploadProgress(80, 'Running AI model...');
+                // Step 2: Predict
+                const predictRes = await fetch(`${API_BASE_URL}/predict`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        filename: currentFilename,
+                        device_type: currentDevice,
+                        latitude: window._userLat || 8.7139,
+                        longitude: window._userLng || 77.7567
+                    })
+                });
+                const predictData = await predictRes.json();
+
+                if (!predictData.success) {
+                    throw new Error(predictData.error || 'Analysis failed');
+                }
+
+                // Save to history
+                saveToHistory(predictData, currentFile);
+
+                showUploadProgress(100, 'Complete! ✅');
+                setTimeout(hideUploadProgress, 1000);
+                // Show results
+                showResults(predictData);
+
+            } catch (error) {
+                hideUploadProgress();
+                showToast('Analysis Failed', error.message, 'error', 5000);
+                console.error('Error:', error);
+            } finally {
+                analyzeBtn.disabled = false;
+                analyzeBtn.innerHTML = '<span>🔍</span> Analyze Damage';
+            }
+        });
+
+        // ===== SHOW RESULTS (Enhanced Cards) =====
+        function showResults(data) {
+            const resultContainer = document.getElementById('resultContainer');
+            const damageCards = document.getElementById('damageCards');
+            const shopsSection = document.getElementById('shopsSection');
+            const emptyState = document.getElementById('emptyState');
+
+            if (!data.all_detections || data.all_detections.length === 0) {
+                resultContainer.classList.remove('show');
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+
+            // Status badge
+            const badge = document.getElementById('resultBadge');
+            const severity = data.severity;
+            badge.className = `result-badge ${severity === 'high' ? 'danger' : severity === 'medium' ? 'warning' : 'success'}`;
+            badge.innerHTML = `<span>${severity === 'high' ? '!' : '✓'}</span><span>${data.damage_type} Detected</span>`;
+
+            // Damage cards
+            damageCards.innerHTML = '';
+            
+            // Main detection
+            const mainCard = createDamageCard({
+                class: data.damage_type,
+                confidence: data.confidence,
+                severity: data.severity,
+                isMain: true
+            });
+            damageCards.appendChild(mainCard);
+
+            // Other detections
+            if (data.all_detections.length > 1) {
+                data.all_detections.slice(1).forEach((detection, index) => {
+                    const card = createDamageCard({...detection, isMain: false, index});
+                    damageCards.appendChild(card);
+                });
+            }
+
+            resultContainer.classList.add('show');
+            loadShops();
+
+            // Show OTP banner if latest history has OTP
+            const latestHist = JSON.parse(localStorage.getItem('fixNearbyHistory') || '[]');
+            if (latestHist.length > 0 && latestHist[0].otp) {
+                const banner = document.getElementById('otpResultBanner');
+                const codeEl = document.getElementById('otpBannerCode');
+                if (banner && codeEl) {
+                    codeEl.textContent = latestHist[0].otp;
+                    banner.style.display = 'flex';
+                }
+            }
+
+            // Scroll to results
+            resultContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function createDamageCard(data) {
+            const card = document.createElement('div');
+            card.className = 'damage-card';
+            
+            const damageType = data.class || 'Unknown';
+            const confidence = Math.round((data.confidence || 0) * 100);
+            const severity = data.severity || 'low';
+            const isMain = data.isMain;
+            
+            const iconMap = {
+                'scratch': '🔧',
+                'crack': '💔',
+                'screen crack': '💔',
+                'dead pixel': '📟',
+                'dead-pixel': '📟',
+                'fade': '🌫️',
+                'lines': '📊',
+                'spot': '🔴',
+                'normal': '✓',
+                'no_damage': '✓',
+                'Adhesive-residue': '🩹',
+                'Damaged screen': '💔',
+                'button-is-missing': '🔘',
+                'dent': '🔨',
+                'broken lamp': '💡',
+                'glass shatter': '💎'
+            };
+            
+            const icon = iconMap[damageType] || '🔧';
+            
+            let confLevel = 'low';
+            if (confidence >= 70) confLevel = 'high';
+            else if (confidence >= 40) confLevel = 'medium';
+
+            const costMap = {
+                'scratch': '₹500 - ₹1,500',
+                'crack': '₹2,000 - ₹5,000',
+                'screen crack': '₹2,000 - ₹8,000',
+                'dead pixel': '₹8,000 - ₹15,000',
+                'fade': '₹1,000 - ₹3,000',
+                'lines': '₹3,000 - ₹8,000',
+                'Damaged screen': '₹3,000 - ₹12,000',
+                'dent': '₹1,500 - ₹5,000',
+                'broken lamp': '₹800 - ₹2,500'
+            };
+            
+            const cost = costMap[damageType] || '₹500 - ₹3,000';
+            
+            const timeEstimate = severity === 'high' ? '2-3 days' : severity === 'medium' ? 'Same day' : '1-2 hours';
+
+            card.innerHTML = `
+                <div class="damage-header">
+                    <div class="damage-icon ${damageType.toLowerCase().replace(/\s+/g, '-')}">${icon}</div>
+                    <div class="damage-title">
+                        <div class="label">${isMain ? 'Primary Damage' : 'Secondary Issue'}</div>
+                        <h4>${damageType.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</h4>
+                    </div>
+                    <div class="confidence-badge ${confLevel}">${confidence}%</div>
+                </div>
+                <div class="confidence-bar">
+                    <div class="confidence-label">
+                        <span>AI Confidence</span>
+                        <span>${confidence}%</span>
+                    </div>
+                    <div class="confidence-track">
+                        <div class="confidence-fill ${confLevel}" style="width: ${confidence}%"></div>
+                    </div>
+                </div>
+                <div class="damage-meta">
+                    <div class="meta-item">
+                        <span class="meta-label">Severity</span>
+                        <span class="meta-value severity-${severity}">${severity.toUpperCase()}</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Est. Cost</span>
+                        <span class="meta-value">${cost}</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Repair Time</span>
+                        <span class="meta-value">${timeEstimate}</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Warranty</span>
+                        <span class="meta-value" style="color: var(--accent-green);">3-6 months</span>
+                    </div>
+                </div>
+                ${isMain ? `
+                <div class="treatment-section">
+                    <h5><span>💡</span> Recommended Action</h5>
+                    <p>Visit a certified repair center for ${damageType} replacement. Avoid DIY fixes to prevent further damage. Backup your data before repair.</p>
+                </div>
+                ` : ''}
+            `;
+            
+            return card;
+        }
+
+        // ===== LOAD SHOPS =====
+        // Haversine
+        function _haversine(lat1,lon1,lat2,lon2){
+            var R=6371,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180;
+            var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+            return(R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))).toFixed(1);
+        }
+
+        async function loadShops() {
+            var shopsSection = document.getElementById('shopsSection');
+            var shopsList    = document.getElementById('shopsList');
+            var radiusLabel  = document.querySelector('#shopsSection .section-header-flex span');
+            shopsSection.style.display = 'block';
+            shopsList.innerHTML = '<div style="text-align:center;padding:2rem"><div style="font-size:1.8rem;margin-bottom:.5rem">📍</div><p style="font-family:Poppins,sans-serif;color:#64748b;font-size:.9rem">Finding shops near you...</p></div>';
+
+            // Get location — IP-based (works on file://)
+            var lat = window._userLat, lng = window._userLng;
+            if (!lat || !lng) {
+                try {
+                    var ipRes = await fetch('https://ip-api.com/json/?fields=lat,lon,city,status');
+                    var ipData = await ipRes.json();
+                    if (ipData.status === 'success') {
+                        lat = window._userLat = ipData.lat;
+                        lng = window._userLng = ipData.lon;
+                        window._userCity = ipData.city || 'Near you';
+                    } else { throw new Error('ip failed'); }
+                } catch(e) {
+                    lat = window._userLat = 8.7139;
+                    lng = window._userLng = 77.7567;
+                    window._userCity = 'Tirunelveli';
+                }
+            }
+
+            // Broad search: any repair/electronics shop within 15km
+            var q = '[out:json][timeout:25];('
+                + 'node["shop"~"mobile|electronics|repair|computer|phone"](around:15000,'+lat+','+lng+');'
+                + 'way["shop"~"mobile|electronics|repair|computer|phone"](around:15000,'+lat+','+lng+');'
+                + 'node["name"~"repair|mobile|phone|service|fix|laptop",i](around:15000,'+lat+','+lng+');'
+                + 'node["amenity"="bicycle_repair_station"](around:15000,'+lat+','+lng+');'
+                + ');out center 20;';
+
+            try {
+                var res = await fetch('https://overpass-api.de/api/interpreter',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent(q)});
+                var data = await res.json();
+                var elements = data.elements || [];
+                shopsList.innerHTML = '';
+                if (radiusLabel) radiusLabel.textContent = '📍 5km · '+(window._userCity||'Near you');
+
+                if (elements.length === 0) {
+                    shopsList.innerHTML = '<div style="text-align:center;padding:2rem"><div style="font-size:2rem;margin-bottom:.5rem">🏪</div>'
+                        +'<p style="font-family:Poppins,sans-serif;font-weight:700;color:#2C3E50">No shops found nearby</p>'
+                        +'<p style="font-size:.83rem;color:#64748b;margin-top:.3rem">Try a different device type.</p></div>';
+                    return;
+                }
+
+                var shops = elements.map(function(el){
+                    var sLat=el.lat||(el.center?el.center.lat:null), sLng=el.lon||(el.center?el.center.lon:null);
+                    var dist=sLat?parseFloat(_haversine(lat,lng,sLat,sLng)):99, t=el.tags||{};
+                    return {name:t.name||t['name:en']||'Repair Shop',
+                        address:([t['addr:housenumber'],t['addr:street'],t['addr:city']].filter(Boolean).join(', '))||t['addr:full']||'',
+                        phone:t.phone||t['contact:phone']||'', opening:t['opening_hours']||'', dist:dist, lat:sLat, lng:sLng};
+                }).sort(function(a,b){return a.dist-b.dist;}).slice(0,12);
+
+                shops.forEach(function(shop,idx){
+                    var card = document.createElement('div');
+                    card.className = 'shop-card';
+                    card.style.animationDelay = (idx*0.08)+'s';
+                    var distTxt = shop.dist < 1 ? Math.round(shop.dist*1000)+'m' : shop.dist+'km';
+                    var mapsUrl = 'https://www.google.com/maps/search/' + encodeURIComponent(shop.name||'repair') + '/@' + shop.lat + ',' + shop.lng + ',16z';
+
+                    // Build meta
+                    var metaDiv = document.createElement('div');
+                    metaDiv.className = 'shop-meta';
+                    metaDiv.innerHTML = '<div class="shop-distance"><span>🚶</span> '+distTxt+' away</div>'
+                        + (shop.opening ? '<div class="shop-status open"><span>🟢</span> '+shop.opening+'</div>' : '');
+
+                    // Build actions
+                    var actDiv = document.createElement('div');
+                    actDiv.className = 'shop-actions';
+                    if (shop.phone) {
+                        var callBtn = document.createElement('button');
+                        callBtn.className = 'btn-call';
+                        callBtn.title = 'Call';
+                        callBtn.textContent = '📞';
+                        callBtn.addEventListener('click', (function(p){ return function(){ window.location.href='tel:'+p; }; })(shop.phone));
+                        actDiv.appendChild(callBtn);
+                    }
+                    var dirBtn = document.createElement('button');
+                    dirBtn.className = 'btn-direction';
+                    dirBtn.title = 'Directions';
+                    dirBtn.textContent = '🧭';
+                    dirBtn.addEventListener('click', (function(u){ return function(){ window.open(u,'_blank'); }; })(mapsUrl));
+                    actDiv.appendChild(dirBtn);
+
+                    // Build info
+                    var infoDiv = document.createElement('div');
+                    infoDiv.className = 'shop-info';
+                    infoDiv.innerHTML = '<div class="shop-name">'+(shop.name||'Repair Shop')+'</div>'
+                        + '<div class="shop-address"><span>📍</span> '+(shop.address||'Near your location')+'</div>';
+                    infoDiv.appendChild(metaDiv);
+
+                    // Icon
+                    var iconDiv = document.createElement('div');
+                    iconDiv.className = 'shop-icon';
+                    iconDiv.textContent = '🏪';
+
+                    card.appendChild(iconDiv);
+                    card.appendChild(infoDiv);
+                    card.appendChild(actDiv);
+                    shopsList.appendChild(card);
+                });
+            } catch(err) {
+                shopsList.innerHTML='<div style="text-align:center;padding:2rem"><div style="font-size:2rem">⚠️</div>'
+                    +'<p style="font-family:Poppins,sans-serif;color:#64748b;margin:.5rem 0">Could not load shops. Check connection.</p>'
+                    +'<button onclick="loadShops()" style="padding:9px 20px;background:#e74c3c;color:#fff;border:none;border-radius:9px;font-weight:700;cursor:pointer">🔄 Retry</button></div>';
+            }
+        }
+        // ===== HISTORY SYSTEM =====
+        function generateOTP() {
+            return Math.floor(100000 + Math.random() * 900000).toString();
+        }
+
+        function saveToHistory(data, file) {
+            const otp = generateOTP();
+            const historyItem = {
+                id: Date.now(),
+                device: currentDevice,
+                damage: data.damage_type,
+                confidence: data.confidence,
+                severity: data.severity,
+                cost_min: data.cost_min || null,
+                cost_max: data.cost_max || null,
+                date: new Date().toLocaleDateString('en-IN'),
+                time: new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'}),
+                thumbnail: previewImage.src,
+                status: 'pending',
+                otp: otp,
+                userName: (document.querySelector('.btn-nav') || {}).textContent || 'User'
+            };
+            detectionHistory.unshift(historyItem);
+            if (detectionHistory.length > 20) detectionHistory.pop();
+            localStorage.setItem('fixNearbyHistory', JSON.stringify(detectionHistory));
+
+            // Show OTP popup after short delay
+            setTimeout(() => showOTPModal(otp, data.damage_type), 800);
+        }
+
+        function showHistory() {
+            const historySection = document.getElementById('historySection');
+            const historyList = document.getElementById('historyList');
+            const detectSection = document.querySelector('.upload-container');
+            
+            // Always show history (no toggle close)
+            historySection.classList.add('show');
+            if (detectSection) detectSection.style.display = 'none';
+            document.getElementById('resultContainer').classList.remove('show');
+            document.getElementById('shopsSection').style.display = 'none';
+            
+            // Always read FRESH from localStorage (shop dashboard may have updated it)
+            detectionHistory = JSON.parse(localStorage.getItem('fixNearbyHistory') || '[]');
+            
+            // Render history
+            historyList.innerHTML = '';
+            
+            if (detectionHistory.length === 0) {
+                historyList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📋</div>
+                        <h3>No history yet</h3>
+                        <p>Your recent detections will appear here</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            detectionHistory.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = 'history-card';
+                card.style.animationDelay = `${index * 0.1}s`;
+                
+                const deviceIcons = {
+                    mobile: '📱',
+                    laptop: '💻',
+                };
+                
+                const statusHtml = item.status === 'fixed'
+                    ? '<div class="history-status fixed">✅ Completed</div>'
+                    : '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">'
+                      + '<div class="history-status pending">⏳ Pending</div>'
+                      + '<div style="font-size:.7rem;font-weight:700;color:#e74c3c;background:#fee2e2;padding:3px 8px;border-radius:6px;cursor:pointer" onclick="showOTPModal(\''+item.otp+'\',\''+item.damage+'\')">OTP: '+item.otp+'</div>'
+                      + '</div>';
+                card.innerHTML = '<img class="history-thumb" src="'+item.thumbnail+'" alt="">'
+                    + '<div class="history-info">'
+                    + '<div class="history-device">'+deviceIcons[item.device]+' '+item.device+'</div>'
+                    + '<div class="history-damage">'+item.damage+'</div>'
+                    + '<div class="history-date">'+item.date+' '+item.time+' • '+Math.round(item.confidence*100)+'% confidence</div>'
+                    + '</div>'
+                    + statusHtml;
+                
+                historyList.appendChild(card);
+            });
+            
+            // Scroll to history
+            historySection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // ===== SCROLL INDICATOR =====
+        document.querySelector('.scroll-indicator').addEventListener('click', () => {
+            document.getElementById('detect').scrollIntoView({ behavior: 'smooth' });
+        });
+
+        // ===== MOBILE MENU =====
+        document.querySelector('.mobile-menu-toggle').addEventListener('click', () => {
+            showToast('Menu', 'Mobile menu coming soon!', 'warning');
+        });
+
+        // ===== 1. TRANSPARENT NAVBAR ON SCROLL =====
+        // ===== 2. BACK TO TOP BUTTON =====
+        // (Moved inside DOMContentLoaded — see below)
+
+        // ===== 3. AOS — SCROLL ANIMATIONS =====
+        function initAOS() {
+            const elements = document.querySelectorAll('[data-aos]');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const delay = entry.target.dataset.aosDelay || 0;
+                        setTimeout(() => {
+                            entry.target.classList.add('aos-animate');
+                        }, parseInt(delay));
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.15 });
+            elements.forEach(el => observer.observe(el));
+        }
+        initAOS();
+
+        // ===== 4. ANIMATED COUNTERS =====
+        function animateCounter(el) {
+            const target = parseInt(el.dataset.count);
+            const suffix = el.dataset.suffix || '';
+            const duration = 1800;
+            const step = target / (duration / 16);
+            let current = 0;
+            const timer = setInterval(() => {
+                current += step;
+                if (current >= target) {
+                    current = target;
+                    clearInterval(timer);
+                }
+                el.textContent = Math.floor(current) + suffix;
+            }, 16);
+        }
+
+        // Trigger counter when hero stats visible
+        const statsObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    document.querySelectorAll('.stat-number[data-count]').forEach(animateCounter);
+                    statsObserver.disconnect();
+                }
+            });
+        }, { threshold: 0.5 });
+
+        const heroStats = document.querySelector('.hero-stats');
+        if (heroStats) statsObserver.observe(heroStats);
+
+        // ===== 5. UPLOAD PROGRESS BAR =====
+        function showUploadProgress(percent, label) {
+            const wrap = document.getElementById('uploadProgressWrap');
+            const fill = document.getElementById('uploadProgressFill');
+            const lbl  = document.getElementById('uploadProgressLabel');
+            if (!wrap) return;
+            wrap.classList.add('show');
+            lbl.classList.add('show');
+            fill.style.width = percent + '%';
+            lbl.textContent = label;
+        }
+        function hideUploadProgress() {
+            const wrap = document.getElementById('uploadProgressWrap');
+            const lbl  = document.getElementById('uploadProgressLabel');
+            if (wrap) wrap.classList.remove('show');
+            if (lbl)  lbl.classList.remove('show');
+        }
+
+        // ===== 6. SMOOTH SCROLL for nav links =====
+        document.querySelectorAll('a[href^="#"]').forEach(link => {
+            link.addEventListener('click', e => {
+                const target = document.querySelector(link.getAttribute('href'));
+                if (target) {
+                    e.preventDefault();
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+
+        // ===== LOGIN MODAL =====
+        function openLogin() {
+            const modal = document.getElementById('loginModal');
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+        function closeLogin() {
+            const modal = document.getElementById('loginModal');
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+        function showSignup() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('signupForm').style.display = 'block';
+        }
+        function showLogin() {
+            document.getElementById('signupForm').style.display = 'none';
+            document.getElementById('loginForm').style.display = 'block';
+        }
+        function handleLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            if (!email || !password) {
+                showToast('Error', 'Please fill all fields', 'error'); return;
+            }
+            // Demo login
+            showToast('Success', 'Welcome back! ' + email, 'success');
+            closeLogin();
+        }
+        function handleSignup() {
+            showToast('Success', 'Account created! Welcome to Fix Nearby', 'success');
+            closeLogin();
+        }
+        // Close modal on backdrop click — inside load to avoid null error
+        window.addEventListener('load', () => {
+            const loginModalEl = document.getElementById('loginModal');
+            if (loginModalEl) {
+                loginModalEl.addEventListener('click', function(e) {
+                    if (e.target === this) closeLogin();
+                });
+            }
+        });
+
+
+        // ─── HOW IT WORKS MODAL ───
+        function openHIW() {
+            document.getElementById('hiwModal').classList.add('hiw-open');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeHIW() {
+            document.getElementById('hiwModal').classList.remove('hiw-open');
+            document.body.style.overflow = '';
+        }
+
+        // ─── DEVICE SELECTED TOAST ───
+        function showDeviceToast(name, device) {
+            const icons = { mobile: '📱', laptop: '💻' };
+            const t = document.getElementById('deviceToast');
+            if (!t) return;
+            t.querySelector('.dt-icon').textContent = icons[device] || '📱';
+            t.querySelector('.dt-name').textContent  = name;
+            t.classList.add('dt-show');
+            clearTimeout(t._timer);
+            t._timer = setTimeout(() => t.classList.remove('dt-show'), 2500);
+        }
+
+
+        // ═══ UPLOAD TABS ═══
+        function switchUploadTab(tab) {
+            document.getElementById('tabUpload').classList.toggle('active', tab === 'upload');
+            document.getElementById('tabCamera').classList.toggle('active', tab === 'camera');
+            if (tab === 'camera') {
+                openCamera();
+            }
+        }
+
+        // ═══ CAMERA ═══
+        let _camStream = null;
+        let _camFacing  = 'environment'; // back camera default
+        let _timerOn    = false;
+        let _timerRef   = null;
+
+        async function openCamera() {
+            // Check if mediaDevices supported
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                // Fallback: switch back to upload tab + trigger file input
+                switchUploadTab('upload');
+                showToast('Camera Not Available', 'Please use Upload File instead', 'warning', 3000);
+                return;
+            }
+            const modal = document.getElementById('cameraModal');
+            const video = document.getElementById('cameraFeed');
+            const err   = document.getElementById('camError');
+            err.classList.remove('show');
+            video.style.display = 'block';
+            modal.classList.add('cam-open');
+            document.body.style.overflow = 'hidden';
+            await startStream();
+        }
+
+        async function startStream(facing) {
+            if (facing) _camFacing = facing;
+            // stop existing
+            if (_camStream) {
+                _camStream.getTracks().forEach(t => t.stop());
+                _camStream = null;
+            }
+            const video = document.getElementById('cameraFeed');
+            try {
+                _camStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: _camFacing, width:{ideal:1280}, height:{ideal:960} },
+                    audio: false
+                });
+                video.srcObject = _camStream;
+                video.style.display = 'block';
+                document.getElementById('camError').classList.remove('show');
+            } catch (e) {
+                video.style.display = 'none';
+                document.getElementById('camError').classList.add('show');
+                console.warn('Camera error:', e);
+            }
+        }
+
+        function closeCamera() {
+            if (_camStream) { _camStream.getTracks().forEach(t => t.stop()); _camStream = null; }
+            clearTimeout(_timerRef);
+            document.getElementById('cameraModal').classList.remove('cam-open');
+            document.getElementById('camCountdown').classList.remove('counting');
+            document.body.style.overflow = '';
+            // reset tabs
+            document.getElementById('tabUpload').classList.add('active');
+            document.getElementById('tabCamera').classList.remove('active');
+        }
+
+        function flipCamera() {
+            _camFacing = _camFacing === 'environment' ? 'user' : 'environment';
+            startStream();
+        }
+
+        function toggleTimer() {
+            _timerOn = !_timerOn;
+            document.getElementById('camTimerBtn').classList.toggle('active', _timerOn);
+            document.getElementById('camTip').textContent = _timerOn
+                ? '⏱ 3-second timer ON · Press 📸 to start'
+                : 'Press 📸 to capture · ⏱ for 3-second timer · 🔄 to flip';
+        }
+
+        function capturePhoto() {
+            if (_timerOn) {
+                runCountdown(3);
+            } else {
+                doCapture();
+            }
+        }
+
+        function runCountdown(n) {
+            const cd  = document.getElementById('camCountdown');
+            const num = document.getElementById('camCountNum');
+            cd.classList.add('counting');
+            num.textContent = n;
+            if (n === 0) {
+                cd.classList.remove('counting');
+                doCapture();
+                return;
+            }
+            _timerRef = setTimeout(() => runCountdown(n - 1), 1000);
+        }
+
+        function doCapture() {
+            const video  = document.getElementById('cameraFeed');
+            const canvas = document.getElementById('camCanvas');
+            canvas.width  = video.videoWidth  || 640;
+            canvas.height = video.videoHeight || 480;
+            const ctx = canvas.getContext('2d');
+            // un-mirror for actual capture
+            if (_camFacing === 'user') {
+                ctx.translate(canvas.width, 0);
+                ctx.scale(-1, 1);
+            }
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob(blob => {
+                if (!blob) {
+                    showToast('Capture Failed', 'Could not capture photo. Try again.', 'error');
+                    return;
+                }
+                const file = new File([blob], 'camera_capture.jpg', { type: 'image/jpeg' });
+                closeCamera();
+                const detectSec = document.getElementById('detect');
+                if (detectSec) detectSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                setTimeout(() => {
+                    handleFile(file, true); // true = from camera, skip aspect ratio check
+                    showToast('📸 Photo Captured!', 'Click Analyze Damage to detect', 'success', 3000);
+                }, 400);
+            }, 'image/jpeg', 0.92);
+        }
+
+
+        // ═══ FULLSCREEN LOGIN PAGE ═══
+        function lpSwitchTab(tab) {
+            document.getElementById('lpSigninForm').style.display = tab === 'signin' ? 'block' : 'none';
+            document.getElementById('lpSignupForm').style.display = tab === 'signup' ? 'block' : 'none';
+            document.getElementById('lpTabSI').classList.toggle('active', tab === 'signin');
+            document.getElementById('lpTabSU').classList.toggle('active', tab === 'signup');
+        }
+        function lpDismiss(name) {
+            const el = document.getElementById('lpOverlay');
+            el.classList.add('lp-gone');
+            setTimeout(() => el.style.display = 'none', 520);
+            // update nav button
+            const nb = document.querySelector('.btn-nav');
+            if (nb) nb.textContent = '👤 ' + name;
+            setTimeout(() => {
+                if (typeof showToast === 'function')
+                    showToast('Welcome!', 'Hello ' + name + ' 👋', 'success', 3000);
+            }, 600);
+        }
+        function lpDoLogin() {
+            const e = document.getElementById('lpSIEmail').value.trim();
+            const p = document.getElementById('lpSIPass').value;
+            if (!e) { document.getElementById('lpSIEmail').style.borderColor='#E74C3C'; return; }
+            if (!p) { document.getElementById('lpSIPass').style.borderColor='#E74C3C'; return; }
+            lpDismiss(e.split('@')[0]);
+        }
+        function lpDoSignup() {
+            const n = document.getElementById('lpSUName').value.trim();
+            const e = document.getElementById('lpSUEmail').value.trim();
+            const p = document.getElementById('lpSUPass').value;
+            if (!n || !e || !p) return;
+            lpDismiss(n.split(' ')[0]);
+        }
+        function lpGuest() { lpDismiss('Guest'); }
+
+        // ═══ DEVICE GOOD TOAST ═══
+        // CSS for it
+        (function() {
+            const s = document.createElement('style');
+            s.textContent = `
+            #deviceGoodToast {
+                position: fixed; top: 80px; right: 20px; z-index: 9997;
+                background: #fff; border-radius: 16px;
+                box-shadow: 0 8px 32px rgba(0,0,0,.15);
+                overflow: hidden; min-width: 230px;
+                transform: translateX(120%);
+                transition: transform .4s cubic-bezier(.34,1.56,.64,1);
+                pointer-events: none;
+            }
+            #deviceGoodToast.dgt-show { transform: translateX(0); }
+            .dgt-bar { height: 4px; background: linear-gradient(90deg,#27AE60,#2ECC71); }
+            .dgt-body { display:flex; align-items:center; gap:.75rem; padding:.85rem 1.1rem; }
+            .dgt-icon { width:40px;height:40px;border-radius:10px;flex-shrink:0;
+                background:linear-gradient(135deg,#27AE60,#1E8449);
+                display:flex;align-items:center;justify-content:center;font-size:1.2rem; }
+            .dgt-text .dgt-title { font-family:'Poppins',sans-serif;font-size:.72rem;font-weight:700;
+                color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.1rem; }
+            .dgt-text .dgt-name { font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700;color:#2C3E50; }
+            `;
+            document.head.appendChild(s);
+            const t = document.createElement('div');
+            t.id = 'deviceGoodToast';
+            t.innerHTML = '<div class="dgt-bar"></div><div class="dgt-body"><div class="dgt-icon">✅</div><div class="dgt-text"><div class="dgt-title">Device Verified</div><div class="dgt-name" id="dgtName">Mobile Phone looks good!</div></div></div>';
+            document.body.appendChild(t);
+        })();
+
+        function showDeviceGoodToast(name) {
+            const t = document.getElementById('deviceGoodToast');
+            if (!t) return;
+            document.getElementById('dgtName').textContent = name + ' image looks good! ✅';
+            t.classList.add('dgt-show');
+            clearTimeout(t._tmr);
+            t._tmr = setTimeout(() => t.classList.remove('dgt-show'), 3000);
+        }
+
+
+        // ─── WELCOME MODAL ───
+        function showWelcomeModal(name, isSignup) {
+            const avatars = ['👤','😊','🙂','😎'];
+            document.getElementById('wmAvatar').textContent = avatars[Math.floor(Math.random()*avatars.length)];
+            document.getElementById('wmName').textContent = 'Welcome, ' + name + '! 🎉';
+            document.getElementById('wmSub').textContent = isSignup
+                ? 'Account created! Ready to detect damage?'
+                : 'Great to have you back on Fix Nearby';
+            document.getElementById('welcomeModal').classList.add('wm-open');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeWelcome() {
+            document.getElementById('welcomeModal').classList.remove('wm-open');
+            document.body.style.overflow = '';
+            var det = document.getElementById('detect');
+            if (det) {
+                det.style.display = 'block';
+                det.style.animation = 'detectReveal .5s ease';
+            }
+            setTimeout(() => {
+                if (det) det.scrollIntoView({behavior:'smooth', block:'start'});
+            }, 300);
+            // Init location detection
+            setTimeout(initGPS, 800);
+        }
+
+        // ─── lpDismiss override — show welcome modal instead of toast ───
+        // override lpDismiss defined earlier
+        window._lpDismissOrig = window.lpDismiss;
+        function lpDismiss(name, isSignup) {
+            const el = document.getElementById('lpOverlay');
+            el.classList.add('lp-gone');
+            setTimeout(() => el.style.display = 'none', 520);
+            const nb = document.querySelector('.btn-nav');
+            if (nb) nb.textContent = '👤 ' + name;
+            // show welcome modal after login page fades
+            setTimeout(() => showWelcomeModal(name, isSignup), 550);
+        }
+        // also override lpDoSignup to pass isSignup=true
+        function lpDoSignup() {
+            const f = document.getElementById('lpSUFirst').value.trim();
+            const l = document.getElementById('lpSULast').value.trim();
+            const d = document.getElementById('lpSUDob').value;
+            const e = document.getElementById('lpSUEmail').value.trim();
+            const p = document.getElementById('lpSUPass').value;
+            if (!f) { document.getElementById('lpSUFirst').style.borderColor='#E74C3C'; return; }
+            if (!l) { document.getElementById('lpSULast').style.borderColor='#E74C3C'; return; }
+            if (!d) { document.getElementById('lpSUDob').style.borderColor='#E74C3C'; return; }
+            if (!e) { document.getElementById('lpSUEmail').style.borderColor='#E74C3C'; return; }
+            if (!p) { document.getElementById('lpSUPass').style.borderColor='#E74C3C'; return; }
+            lpDismiss(f, true);
+        }
+        function lpDoLogin() {
+            const e = document.getElementById('lpSIEmail').value.trim();
+            const p = document.getElementById('lpSIPass').value;
+            if (!e) { document.getElementById('lpSIEmail').style.borderColor='#E74C3C'; return; }
+            if (!p) { document.getElementById('lpSIPass').style.borderColor='#E74C3C'; return; }
+            lpDismiss(e.split('@')[0], false);
+        }
+        function lpGuest() { lpDismiss('Guest', false); }
+
+        // ─── GO TO DETECT (navigate-style) ───
+        function goToDetect() {
+            const detect = document.getElementById('detect');
+            if (!detect) return;
+            // show if hidden
+            if (detect.style.display === 'none' || detect.style.display === '') {
+                detect.style.display = 'block';
+                detect.style.animation = 'detectReveal .5s ease';
+            }
+            setTimeout(() => {
+                detect.scrollIntoView({behavior:'smooth', block:'start'});
+                detect.style.transition = 'box-shadow .4s';
+                detect.style.boxShadow = '0 0 0 4px rgba(231,76,60,.2)';
+                setTimeout(() => detect.style.boxShadow = '', 1800);
+            }, 80);
+        }
+
+        // ─── ABOUT TOGGLE ───
+        let _aboutOpen = false;
+        function toggleAbout() {
+            const sec = document.getElementById('about');
+            _aboutOpen = !_aboutOpen;
+            if (_aboutOpen) {
+                sec.style.display = 'block';
+                sec.style.animation = 'fadeInUp .4s ease';
+                setTimeout(() => sec.scrollIntoView({behavior:'smooth', block:'start'}), 100);
+            } else {
+                sec.style.display = 'none';
+            }
+        }
+
+        // ─── DEVICE MUST BE SELECTED BEFORE UPLOAD ───
+        // guard: if currentDevice is null, prompt user
+
+
+        // ─── TEAM TOGGLE ───
+        let _teamOpen = false;
+        function toggleTeam() {
+            const sec = document.getElementById('team');
+            const btn = document.getElementById('teamToggleBtn');
+            _teamOpen = !_teamOpen;
+            if (_teamOpen) {
+                sec.style.display = 'block';
+                sec.classList.add('team-visible');
+                btn.innerHTML = '✖ Close Team';
+                btn.style.background = '#475569';
+                btn.style.boxShadow = 'none';
+                setTimeout(() => sec.scrollIntoView({behavior:'smooth', block:'start'}), 100);
+            } else {
+                sec.style.display = 'none';
+                sec.classList.remove('team-visible');
+                btn.innerHTML = '👥 Meet the Developers';
+                btn.style.background = 'linear-gradient(135deg,#E74C3C,#C0392B)';
+                btn.style.boxShadow = '0 4px 18px rgba(231,76,60,.35)';
+            }
+        }
+
+
+        // ═══ OTP MODAL ═══
+        let _currentOTP = '';
+        function showOTPModal(otp, damageType) {
+            _currentOTP = otp;
+            document.getElementById('otpDamageLabel').textContent = (damageType || 'Damage') + ' detected';
+            const box = document.getElementById('otpDigitBox');
+            box.innerHTML = '';
+            String(otp).split('').forEach(d => {
+                const el = document.createElement('div');
+                el.className = 'otp-digit';
+                el.textContent = d;
+                box.appendChild(el);
+            });
+            document.getElementById('otpModal').classList.add('otp-open');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeOTPModal() {
+            document.getElementById('otpModal').classList.remove('otp-open');
+            document.body.style.overflow = '';
+        }
+        function copyOTP() {
+            navigator.clipboard.writeText(_currentOTP).then(() => {
+                showToast('Copied!', 'OTP ' + _currentOTP + ' copied to clipboard', 'success', 2500);
+            }).catch(() => {
+                showToast('OTP', _currentOTP, 'success', 4000);
+            });
+        }
+
+        // ═══ MAP — Google Maps direction ═══
+        function openGoogleMaps(btn) {
+            const card = btn.closest('.shop-card');
+            const nameEl = card ? card.querySelector('.shop-name') : null;
+            const name = nameEl ? nameEl.textContent.trim() : 'repair shop';
+            const lat = window._userLat;
+            const lng = window._userLng;
+            let url;
+            if (lat && lng) {
+                url = 'https://www.google.com/maps/search/' + encodeURIComponent(name) + '/@' + lat + ',' + lng + ',15z';
+            } else {
+                url = 'https://www.google.com/maps/search/' + encodeURIComponent(name + ' repair shop');
+            }
+            window.open(url, '_blank');
+        }
+
+        // ═══ MARK COMPLETE (user side via OTP from shop) ═══
+        function markComplete(otp) {
+            let hist = JSON.parse(localStorage.getItem('fixNearbyHistory') || '[]');
+            const idx = hist.findIndex(h => h.otp === String(otp));
+            if (idx === -1) return false;
+            hist[idx].status = 'fixed';
+            localStorage.setItem('fixNearbyHistory', JSON.stringify(hist));
+            // Refresh displayed history
+            if (typeof detectionHistory !== 'undefined') {
+                detectionHistory = hist;
+                showHistory();
+            }
+            return true;
+        }
+
+
+        function copyOTPBanner() {
+            const code = document.getElementById('otpBannerCode').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                showToast('Copied!', 'OTP ' + code + ' copied', 'success', 2000);
+            }).catch(() => {
+                showToast('OTP', code, 'success', 3000);
+            });
+        }
+
+
+        // ─── Auto-refresh history when shop dashboard marks complete ───
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'fixNearbyHistory') {
+                detectionHistory = JSON.parse(e.newValue || '[]');
+                // If history section is visible, re-render it
+                const hs = document.getElementById('historySection');
+                if (hs && hs.classList.contains('show')) {
+                    showHistory();
+                }
+            }
+        });
+
+
+        // ═══ GEOLOCATION — IP first (works on file://), GPS backup ═══
+        window._userLat  = null;
+        window._userLng  = null;
+        window._userCity = null;
+
+        async function initGPS() {
+            // Try GPS first (works on http://)
+            if (navigator.geolocation && window.location.protocol !== 'file:') {
+                try {
+                    const pos = await new Promise((res, rej) =>
+                        navigator.geolocation.getCurrentPosition(res, rej, {timeout: 8000, enableHighAccuracy: false})
+                    );
+                    window._userLat = pos.coords.latitude;
+                    window._userLng = pos.coords.longitude;
+                    // Get city from coords
+                    try {
+                        const r = await fetch('https://nominatim.openstreetmap.org/reverse?lat='
+                            + window._userLat + '&lon=' + window._userLng + '&format=json');
+                        const d = await r.json();
+                        window._userCity = d.address?.city || d.address?.town
+                            || d.address?.village || d.address?.county || 'Near you';
+                    } catch(e) { window._userCity = 'Near you'; }
+                    showGpsToast('✅ Location: ' + window._userCity, true);
+                    return;
+                } catch(e) {
+                    console.warn('GPS failed, trying IP location:', e.message);
+                }
+            }
+
+            // IP-based location (works on file://, no permission needed)
+            try {
+                showGpsToast('📍 Detecting location...', true);
+                const r = await fetch('https://ip-api.com/json/?fields=lat,lon,city,regionName,status');
+                const d = await r.json();
+                if (d.status === 'success') {
+                    window._userLat  = d.lat;
+                    window._userLng  = d.lon;
+                    window._userCity = d.city || d.regionName || 'Near you';
+                    showGpsToast('✅ Location: ' + window._userCity, true);
+                } else {
+                    throw new Error('IP location failed');
+                }
+            } catch(e) {
+                console.warn('IP location failed, using default');
+                window._userLat  = 8.7139;
+                window._userLng  = 77.7567;
+                window._userCity = 'Tirunelveli';
+                showGpsToast('📍 Using default location', false);
+            }
+        }
+
+        function showGpsToast(msg, ok) {
+            var t = document.getElementById('gpsToast');
+            if (!t) return;
+            var dot = t.querySelector('.gps-dot');
+            document.getElementById('gpsToastText').textContent = msg;
+            if (dot) dot.style.background = ok ? '#27ae60' : '#e74c3c';
+            t.classList.add('gps-show');
+            clearTimeout(t._tmr);
+            t._tmr = setTimeout(function() { t.classList.remove('gps-show'); }, 3500);
+        }
+
+    </script>
+
+    <!-- BACK TO TOP -->
+    <button id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Back to top">↑</button>
+
+<!-- LOGIN MODAL -->
+    <div id="loginModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
+        <div style="background:white;border-radius:24px;padding:2.5rem;width:90%;max-width:420px;box-shadow:0 25px 50px rgba(0,0,0,.2);position:relative">
+            <button onclick="closeLogin()" style="position:absolute;top:1rem;right:1rem;background:#f1f5f9;border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:1rem">✕</button>
+            <div style="text-align:center;margin-bottom:1.5rem">
+                <div style="width:60px;height:60px;background:linear-gradient(135deg,#E74C3C,#C0392B);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin:0 auto .75rem">🔧</div>
+                <h2 style="font-family:'Poppins',sans-serif;font-size:1.4rem;font-weight:700;color:#2C3E50;margin-bottom:.25rem">Welcome Back</h2>
+                <p style="font-size:.85rem;color:#7F8C8D">Sign in to Fix Nearby</p>
+            </div>
+            <div id="loginForm">
+                <div style="margin-bottom:1rem">
+                    <label style="display:block;font-size:.82rem;font-weight:600;color:#2C3E50;margin-bottom:.4rem">Email</label>
+                    <input type="email" id="loginEmail" placeholder="your@email.com" style="width:100%;padding:12px 16px;border:2px solid #e2e8f0;border-radius:12px;font-size:.95rem;outline:none;box-sizing:border-box">
+                </div>
+                <div style="margin-bottom:1.5rem">
+                    <label style="display:block;font-size:.82rem;font-weight:600;color:#2C3E50;margin-bottom:.4rem">Password</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" style="width:100%;padding:12px 16px;border:2px solid #e2e8f0;border-radius:12px;font-size:.95rem;outline:none;box-sizing:border-box">
+                </div>
+                <button onclick="handleLogin()" style="width:100%;padding:14px;background:linear-gradient(135deg,#E74C3C,#C0392B);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:600;cursor:pointer;box-shadow:0 4px 15px rgba(231,76,60,.3)">Sign In</button>
+                <p style="text-align:center;margin-top:1rem;font-size:.85rem;color:#7F8C8D">Don't have an account? <a href="#" onclick="showSignup();return false;" style="color:#E74C3C;font-weight:600;text-decoration:none">Sign Up</a></p>
+            </div>
+            <div id="signupForm" style="display:none">
+                <div style="margin-bottom:1rem">
+                    <label style="display:block;font-size:.82rem;font-weight:600;color:#2C3E50;margin-bottom:.4rem">Full Name</label>
+                    <input type="text" id="signupName" placeholder="Mohamed Yunus" style="width:100%;padding:12px 16px;border:2px solid #e2e8f0;border-radius:12px;font-size:.95rem;outline:none;box-sizing:border-box">
+                </div>
+                <div style="margin-bottom:1rem">
+                    <label style="display:block;font-size:.82rem;font-weight:600;color:#2C3E50;margin-bottom:.4rem">Email</label>
+                    <input type="email" id="signupEmail" placeholder="your@email.com" style="width:100%;padding:12px 16px;border:2px solid #e2e8f0;border-radius:12px;font-size:.95rem;outline:none;box-sizing:border-box">
+                </div>
+                <div style="margin-bottom:1.5rem">
+                    <label style="display:block;font-size:.82rem;font-weight:600;color:#2C3E50;margin-bottom:.4rem">Password</label>
+                    <input type="password" id="signupPassword" placeholder="••••••••" style="width:100%;padding:12px 16px;border:2px solid #e2e8f0;border-radius:12px;font-size:.95rem;outline:none;box-sizing:border-box">
+                </div>
+                <button onclick="handleSignup()" style="width:100%;padding:14px;background:linear-gradient(135deg,#27AE60,#1E8449);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:600;cursor:pointer">Create Account</button>
+                <p style="text-align:center;margin-top:1rem;font-size:.85rem;color:#7F8C8D">Already have an account? <a href="#" onclick="showLogin();return false;" style="color:#E74C3C;font-weight:600;text-decoration:none">Sign In</a></p>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ═══ DEVICE MISMATCH ERROR MODAL ═══ -->
+    <div id="deviceErrorModal">
+        <div class="dem-card">
+            <div class="dem-header">
+                <div class="dem-icon-wrap">⚠️</div>
+                <h3>Wrong Device Image!</h3>
+                <p id="demSubtitle">Image doesn't match selected device</p>
+            </div>
+            <div class="dem-body">
+                <div class="dem-compare">
+                    <div class="dem-device-box selected">
+                        <span class="dem-emoji" id="demSelectedEmoji">📱</span>
+                        <div class="dem-label">You Selected</div>
+                        <div class="dem-name" id="demSelectedName">Mobile Phone</div>
+                    </div>
+                    <div class="dem-arrow">≠</div>
+                    <div class="dem-device-box uploaded">
+                        <span class="dem-emoji" id="demUploadedEmoji">💻</span>
+                        <div class="dem-label">Image Detected</div>
+                        <div class="dem-name" id="demUploadedName">Laptop</div>
+                    </div>
+                </div>
+                <div class="dem-hint">
+                    💡 Please either <strong>switch to <span id="demSwitchTo">Laptop</span></strong> or upload a <strong><span id="demUploadHint">Mobile Phone</span> image</strong> for accurate AI detection.
+                </div>
+                <div class="dem-actions">
+                    <button class="dem-btn-fix" id="demSwitchBtn" onclick="demSwitchDevice()">
+                        Switch to <span id="demSwitchLabel">Laptop</span>
+                    </button>
+                    <button class="dem-btn-cancel" onclick="demClose()">
+                        Change Image
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ═══ HOW IT WORKS MODAL ═══ -->
+    <div id="hiwModal" onclick="if(event.target===this)closeHIW()">
+        <div class="hiw-card">
+            <button class="hiw-x" onclick="closeHIW()">✕</button>
+            <div class="hiw-head">
+                <div class="hiw-tag">Simple Process</div>
+                <h2>How It <span>Works</span></h2>
+            </div>
+            <div class="hiw-grid">
+                <div class="hiw-step">
+                    <div class="hiw-ico" style="background:#FEE2E2">📱
+                        <span class="hiw-num" style="background:#e74c3c">1</span></div>
+                    <div><h4>Select Device</h4>
+                    <p>Choose Mobile Phone or Laptop. Each has its own YOLOv8 model trained for accurate damage detection.</p></div>
+                </div>
+                <div class="hiw-step">
+                    <div class="hiw-ico" style="background:#DCFCE7">📤
+                        <span class="hiw-num" style="background:#27AE60">2</span></div>
+                    <div><h4>Upload Photo</h4>
+                    <p>Take or upload a clear photo of the damaged area. System validates image type automatically.</p></div>
+                </div>
+                <div class="hiw-step">
+                    <div class="hiw-ico" style="background:#FEF3C7">🧠
+                        <span class="hiw-num" style="background:#F39C12">3</span></div>
+                    <div><h4>AI Analyzes</h4>
+                    <p>YOLOv8 model detects damage type, confidence score and severity — results in under 5 seconds.</p></div>
+                </div>
+                <div class="hiw-step">
+                    <div class="hiw-ico" style="background:#EDE9FE">📍
+                        <span class="hiw-num" style="background:#8E44AD">4</span></div>
+                    <div><h4>Find Shops</h4>
+                    <p>GPS locates repair shops within 5km using OpenStreetMap with address and contact details.</p></div>
+                </div>
+            </div>
+            <div class="hiw-cta">
+                <button class="hiw-cta-btn" onclick="closeHIW();document.getElementById('detect').scrollIntoView({behavior:'smooth'})">
+                    🔍 Start Detection Now
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ DEVICE TOAST ═══ -->
+    <div id="deviceToast">
+        <div class="dt-bar"></div>
+        <div class="dt-body">
+            <div class="dt-icon">📱</div>
+            <div class="dt-text">
+                <div class="dt-title">Device Selected</div>
+                <div class="dt-name">Mobile Phone</div>
+            </div>
+            <span class="dt-check">✅</span>
+        </div>
+    </div>
+
+    <!-- ═══ CAMERA MODAL ═══ -->
+    <div id="cameraModal">
+        <div class="cam-wrapper">
+            <div class="cam-header">
+                <div class="cam-title">📷 Take a Photo</div>
+                <button class="cam-close-btn" onclick="closeCamera()">✕</button>
+            </div>
+            <div class="cam-video-box">
+                <video id="cameraFeed" autoplay playsinline muted></video>
+                <div class="cam-guide">
+                    <div class="cam-guide-rect"></div>
+                </div>
+                <div class="cam-guide-label" id="camGuideLabel">Position the damaged area inside the box</div>
+                <div class="cam-countdown" id="camCountdown">
+                    <div class="cam-count-num" id="camCountNum">3</div>
+                </div>
+                <!-- hidden error state -->
+                <div class="cam-error" id="camError">
+                    <div class="cam-error-icon">🚫</div>
+                    <h3>Camera Access Denied</h3>
+                    <p>Please allow camera permission in your browser settings and try again.</p>
+                </div>
+            </div>
+            <div class="cam-controls">
+                <button class="cam-btn-timer" id="camTimerBtn" onclick="toggleTimer()" title="3s Timer">⏱</button>
+                <button class="cam-btn-capture" onclick="capturePhoto()" id="camCaptureBtn" title="Take Photo">📸</button>
+                <button class="cam-btn-flip" onclick="flipCamera()" title="Flip Camera">🔄</button>
+            </div>
+            <div class="cam-tip" id="camTip">Press 📸 to capture · ⏱ for 3-second timer · 🔄 to flip camera</div>
+        </div>
+        <canvas id="camCanvas" style="display:none"></canvas>
+    </div>
+
+
+    <!-- ═══ WELCOME MODAL ═══ -->
+    <div id="welcomeModal">
+        <div class="wm-card">
+            <div class="wm-top">
+                <div class="wm-avatar" id="wmAvatar">👤</div>
+                <h2 id="wmName">Welcome!</h2>
+                <p id="wmSub">Great to have you on Fix Nearby</p>
+            </div>
+            <div class="wm-body">
+                <div class="wm-stats">
+                    <div class="wm-stat"><div class="ws-num">2</div><div class="ws-lbl">Device Types</div></div>
+                    <div class="wm-stat"><div class="ws-num">62%</div><div class="ws-lbl">Accuracy</div></div>
+                    <div class="wm-stat"><div class="ws-num">5km</div><div class="ws-lbl">Shop Range</div></div>
+                </div>
+                <button class="wm-go-btn" onclick="closeWelcome()">🔍 Start Detecting Damage</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ═══ OTP MODAL ═══ -->
+    <div id="otpModal">
+        <div class="otp-card">
+            <div class="otp-header">
+                <h3>🔐 Your Service OTP</h3>
+                <p id="otpDamageLabel">Screen Crack detected</p>
+            </div>
+            <div class="otp-body">
+                <div class="otp-box" id="otpDigitBox"></div>
+                <p class="otp-desc">Share this OTP with the <strong>repair shop</strong>.<br>
+                They will mark your job <strong>Complete</strong> after fixing.</p>
+                <button class="otp-copy-btn" onclick="copyOTP()">📋 Copy OTP</button>
+                <button class="otp-close-btn" onclick="closeOTPModal()">Done</button>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="gpsToast"><span class="gps-dot"></span><span id="gpsToastText">📍 Detecting location...</span></div>
+</body>
+</html>

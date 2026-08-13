@@ -1,0 +1,36 @@
+/* ===========================
+   FIX NEARBY — RESPONSIVE
+   =========================== */
+
+/* Mobile First — base styles in components.css */
+
+@media (max-width: 480px) {
+  .hero__title { font-size: 1.8rem; }
+  .hero__steps { gap: 8px; }
+  .step-arrow { font-size: 0.8rem; }
+  .stats-row { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stat-box { padding: 12px 8px; }
+  .stat-val { font-size: 1rem; }
+  .navbar__name { font-size: 1rem; }
+  .container { padding: 0 12px; }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+  .hero__title { font-size: 2rem; }
+  .container { max-width: 600px; }
+}
+
+@media (min-width: 769px) {
+  .container { max-width: 700px; margin: 0 auto; }
+  .bottom-nav { max-width: 700px; left: 50%; transform: translateX(-50%); border-radius: 20px 20px 0 0; }
+  .navbar { max-width: 700px; margin: 0 auto; }
+  .hero__title { font-size: 2.8rem; }
+  .device-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

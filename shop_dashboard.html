@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fix Nearby — Shop Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --primary: #E74C3C;
+        --primary-dark: #C0392B;
+        --green: #27AE60;
+        --orange: #F39C12;
+        --dark: #1e293b;
+        --gray: #64748b;
+        --light: #f8fafc;
+        --border: #e2e8f0;
+        --radius: 16px;
+        --shadow: 0 4px 20px rgba(0,0,0,.08);
+        --shadow-lg: 0 12px 40px rgba(0,0,0,.14);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Inter',sans-serif; background:var(--light); color:var(--dark); min-height:100vh; }
+
+    /* ── LOGIN PAGE ── */
+    #shopLogin {
+        position:fixed; inset:0; z-index:9999;
+        display:flex; align-items:center; justify-content:center;
+        background:linear-gradient(135deg,#1a0505 0%,#2C0A0A 45%,#E74C3C 100%);
+        transition:opacity .5s, transform .5s;
+    }
+    #shopLogin.gone { opacity:0; pointer-events:none; transform:scale(1.04); }
+    .sl-blob { position:absolute; border-radius:50%; filter:blur(80px); opacity:.2; pointer-events:none; }
+    .sl-blob1 { width:400px;height:400px;background:#E74C3C;top:-120px;right:-100px; }
+    .sl-blob2 { width:280px;height:280px;background:#C0392B;bottom:-80px;left:-70px; }
+    .sl-card {
+        position:relative; z-index:2;
+        background:#fff; border-radius:28px; padding:2.6rem 2.2rem;
+        width:90%; max-width:400px;
+        box-shadow:0 40px 100px rgba(0,0,0,.5);
+        animation:slRise .55s cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes slRise { from{transform:translateY(60px) scale(.95);opacity:0} to{transform:none;opacity:1} }
+    .sl-logo { text-align:center; margin-bottom:1.6rem; }
+    .sl-logo-icon {
+        width:68px; height:68px; border-radius:20px;
+        background:linear-gradient(135deg,#E74C3C,#C0392B);
+        display:flex; align-items:center; justify-content:center;
+        font-size:2rem; margin:0 auto .7rem;
+        box-shadow:0 8px 24px rgba(231,76,60,.4);
+    }
+    .sl-logo h2 { font-family:'Poppins',sans-serif; font-size:1.35rem; font-weight:800; color:var(--dark); margin:0; }
+    .sl-logo p { font-size:.78rem; color:#94a3b8; margin:.2rem 0 0; }
+    .sl-badge {
+        display:inline-block; background:#fee2e2; color:#c0392b;
+        font-size:.7rem; font-weight:700; text-transform:uppercase;
+        letter-spacing:.06em; padding:3px 10px; border-radius:999px; margin-top:.4rem;
+    }
+    .sl-field { margin-bottom:.85rem; }
+    .sl-field label { display:block; font-size:.76rem; font-weight:600; color:var(--dark); margin-bottom:.35rem; font-family:'Poppins',sans-serif; }
+    .sl-field input {
+        width:100%; padding:11px 14px; border:2px solid var(--border);
+        border-radius:11px; font-size:.92rem; outline:none;
+        transition:border .2s; box-sizing:border-box; color:var(--dark);
+        font-family:'Inter',sans-serif;
+    }
+    .sl-field input:focus { border-color:var(--primary); }
+    .sl-row { display:flex; gap:.6rem; }
+    .sl-row .sl-field { flex:1; }
+    .sl-submit {
+        width:100%; padding:13px;
+        background:linear-gradient(135deg,#E74C3C,#C0392B);
+        color:#fff; border:none; border-radius:12px;
+        font-size:.95rem; font-weight:700; font-family:'Poppins',sans-serif;
+        cursor:pointer; box-shadow:0 4px 18px rgba(231,76,60,.35);
+        transition:all .2s; margin-top:.3rem;
+    }
+    .sl-submit:hover { transform:translateY(-2px); box-shadow:0 8px 26px rgba(231,76,60,.42); }
+    .sl-error {
+        background:#fee2e2; color:#c0392b; border-radius:10px;
+        padding:9px 13px; font-size:.82rem; font-weight:600;
+        margin-bottom:.8rem; display:none;
+    }
+
+    /* ── DASHBOARD ── */
+    #dashboard { display:none; flex-direction:column; min-height:100vh; }
+
+    /* Topbar */
+    .db-topbar {
+        background:#fff; border-bottom:1px solid var(--border);
+        padding:0 1.5rem; height:64px;
+        display:flex; align-items:center; justify-content:space-between;
+        position:sticky; top:0; z-index:100;
+        box-shadow:0 2px 10px rgba(0,0,0,.06);
+    }
+    .db-brand { display:flex; align-items:center; gap:.7rem; }
+    .db-brand-icon {
+        width:38px; height:38px; border-radius:10px;
+        background:linear-gradient(135deg,#E74C3C,#C0392B);
+        display:flex; align-items:center; justify-content:center;
+        font-size:1.1rem;
+    }
+    .db-brand h1 { font-family:'Poppins',sans-serif; font-size:1.1rem; font-weight:800; color:var(--dark); }
+    .db-brand span { font-size:.72rem; color:#94a3b8; font-weight:500; display:block; line-height:1; }
+    .db-user { display:flex; align-items:center; gap:.8rem; }
+    .db-user-name { font-family:'Poppins',sans-serif; font-size:.85rem; font-weight:700; color:var(--dark); }
+    .db-logout {
+        padding:7px 14px; background:var(--light); border:1.5px solid var(--border);
+        border-radius:8px; font-size:.8rem; font-weight:600; cursor:pointer;
+        font-family:'Poppins',sans-serif; color:var(--gray); transition:all .2s;
+    }
+    .db-logout:hover { border-color:var(--primary); color:var(--primary); }
+
+    /* Stats bar */
+    .db-stats {
+        display:grid; grid-template-columns:repeat(3,1fr);
+        gap:1rem; padding:1.2rem 1.5rem;
+        background:#fff; border-bottom:1px solid var(--border);
+    }
+    .db-stat {
+        background:var(--light); border-radius:14px;
+        padding:1rem 1.2rem; border:1.5px solid var(--border);
+        display:flex; align-items:center; gap:.9rem;
+    }
+    .db-stat-ico {
+        width:42px; height:42px; border-radius:11px;
+        display:flex; align-items:center; justify-content:center;
+        font-size:1.3rem; flex-shrink:0;
+    }
+    .db-stat .ds-num { font-family:'Poppins',sans-serif; font-size:1.5rem; font-weight:900; line-height:1; }
+    .db-stat .ds-lbl { font-size:.72rem; color:var(--gray); font-weight:600; margin-top:.2rem; }
+
+    /* OTP Entry */
+    .db-otp-bar {
+        background:#fff; border-bottom:1px solid var(--border);
+        padding:1rem 1.5rem;
+        display:flex; align-items:center; gap:.8rem;
+        flex-wrap:wrap;
+    }
+    .db-otp-bar label { font-family:'Poppins',sans-serif; font-size:.88rem; font-weight:700; color:var(--dark); white-space:nowrap; }
+    .otp-input-wrap { display:flex; gap:.4rem; align-items:center; flex:1; max-width:320px; }
+    .otp-input-wrap input {
+        flex:1; padding:10px 14px; border:2px solid var(--border);
+        border-radius:10px; font-size:1.1rem; font-weight:700;
+        letter-spacing:.2em; text-align:center;
+        font-family:'Poppins',sans-serif; outline:none;
+        transition:border .2s; color:var(--dark);
+    }
+    .otp-input-wrap input:focus { border-color:var(--primary); }
+    .otp-verify-btn {
+        padding:10px 20px; background:linear-gradient(135deg,#E74C3C,#C0392B);
+        color:#fff; border:none; border-radius:10px;
+        font-size:.88rem; font-weight:700; font-family:'Poppins',sans-serif;
+        cursor:pointer; white-space:nowrap; transition:all .2s;
+        box-shadow:0 3px 12px rgba(231,76,60,.3);
+    }
+    .otp-verify-btn:hover { transform:translateY(-1px); box-shadow:0 6px 18px rgba(231,76,60,.4); }
+    .otp-msg { font-size:.82rem; font-weight:600; }
+    .otp-msg.ok { color:var(--green); }
+    .otp-msg.err { color:var(--primary); }
+
+    /* Job list */
+    .db-main { padding:1.2rem 1.5rem; flex:1; }
+    .db-section-title {
+        font-family:'Poppins',sans-serif; font-size:1rem; font-weight:800;
+        color:var(--dark); margin-bottom:.9rem;
+        display:flex; align-items:center; gap:.5rem;
+    }
+    .db-count-badge {
+        background:var(--primary); color:#fff;
+        font-size:.7rem; font-weight:800; padding:2px 8px;
+        border-radius:999px; font-family:'Poppins',sans-serif;
+    }
+
+    /* Job card */
+    .job-card {
+        background:#fff; border-radius:18px; padding:1.1rem 1.2rem;
+        border:1.5px solid var(--border); margin-bottom:.8rem;
+        display:flex; align-items:center; gap:1rem;
+        transition:all .25s; position:relative; overflow:hidden;
+    }
+    .job-card::before {
+        content:''; position:absolute; left:0; top:0; bottom:0;
+        width:4px; background:var(--orange);
+        border-radius:4px 0 0 4px;
+    }
+    .job-card.completed::before { background:var(--green); }
+    .job-card:hover { box-shadow:var(--shadow); transform:translateY(-2px); }
+
+    .job-thumb {
+        width:56px; height:56px; border-radius:12px;
+        object-fit:cover; flex-shrink:0; border:2px solid var(--border);
+    }
+    .job-thumb-placeholder {
+        width:56px; height:56px; border-radius:12px;
+        background:var(--light); border:2px solid var(--border);
+        display:flex; align-items:center; justify-content:center;
+        font-size:1.5rem; flex-shrink:0;
+    }
+    .job-info { flex:1; min-width:0; }
+    .job-info .ji-name { font-family:'Poppins',sans-serif; font-size:.9rem; font-weight:700; color:var(--dark); }
+    .job-info .ji-detail { font-size:.78rem; color:var(--gray); margin-top:.2rem; }
+    .job-info .ji-otp { 
+        display:inline-block; margin-top:.35rem;
+        background:#fee2e2; color:#c0392b;
+        font-size:.72rem; font-weight:800; padding:2px 9px;
+        border-radius:6px; letter-spacing:.08em; font-family:'Poppins',sans-serif;
+    }
+    .job-info .ji-time { font-size:.72rem; color:#94a3b8; margin-top:.2rem; }
+
+    .job-right { display:flex; flex-direction:column; align-items:flex-end; gap:.5rem; }
+    .job-status {
+        font-size:.72rem; font-weight:700; padding:4px 12px;
+        border-radius:999px; white-space:nowrap;
+        font-family:'Poppins',sans-serif;
+    }
+    .job-status.pending { background:#fff3cd; color:#856404; }
+    .job-status.completed { background:#d1fae5; color:#065f46; }
+
+    .job-complete-btn {
+        padding:7px 14px; border:none; border-radius:9px;
+        font-size:.78rem; font-weight:700; font-family:'Poppins',sans-serif;
+        cursor:pointer; transition:all .2s; white-space:nowrap;
+        background:linear-gradient(135deg,#27AE60,#1E8449);
+        color:#fff; box-shadow:0 2px 10px rgba(39,174,96,.3);
+    }
+    .job-complete-btn:hover { transform:translateY(-1px); box-shadow:0 4px 14px rgba(39,174,96,.4); }
+    .job-complete-btn.done { background:#d1fae5; color:#065f46; box-shadow:none; cursor:default; }
+
+    /* Empty */
+    .db-empty {
+        text-align:center; padding:3rem 1rem;
+        color:var(--gray);
+    }
+    .db-empty .de-icon { font-size:3rem; margin-bottom:.75rem; }
+    .db-empty h3 { font-family:'Poppins',sans-serif; font-size:1rem; font-weight:700; color:var(--dark); margin-bottom:.4rem; }
+    .db-empty p { font-size:.84rem; }
+
+    /* Back button */
+    .db-back-btn {
+        display:inline-flex; align-items:center; gap:.5rem;
+        padding:8px 16px; background:var(--light); border:1.5px solid var(--border);
+        border-radius:10px; font-size:.82rem; font-weight:600;
+        font-family:'Poppins',sans-serif; color:var(--gray);
+        cursor:pointer; transition:all .2s; text-decoration:none;
+        margin-bottom:1rem;
+    }
+    .db-back-btn:hover { border-color:var(--primary); color:var(--primary); }
+
+    /* Toast */
+    .db-toast {
+        position:fixed; top:80px; right:20px; z-index:99999;
+        background:#1e293b; color:#fff; border-radius:14px;
+        padding:.8rem 1.2rem; font-size:.85rem; font-weight:600;
+        font-family:'Poppins',sans-serif;
+        box-shadow:0 8px 30px rgba(0,0,0,.25);
+        transform:translateX(120%); transition:transform .4s cubic-bezier(.34,1.56,.64,1);
+        display:flex; align-items:center; gap:.6rem; max-width:280px;
+    }
+    .db-toast.show { transform:translateX(0); }
+    .db-toast.t-ok { border-left:4px solid var(--green); }
+    .db-toast.t-err { border-left:4px solid var(--primary); }
+
+    /* Confirm complete modal */
+    #confirmModal {
+        display:none; position:fixed; inset:0; z-index:9998;
+        align-items:center; justify-content:center;
+        background:rgba(0,0,0,.6); backdrop-filter:blur(6px);
+    }
+    #confirmModal.open { display:flex; animation:cfFade .25s ease; }
+    @keyframes cfFade { from{opacity:0} to{opacity:1} }
+    .cf-card {
+        background:#fff; border-radius:24px; padding:2rem 1.8rem;
+        width:90%; max-width:360px; text-align:center;
+        box-shadow:0 30px 80px rgba(0,0,0,.25);
+        animation:cfPop .4s cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes cfPop { from{transform:scale(.85);opacity:0} to{transform:scale(1);opacity:1} }
+    .cf-icon { font-size:3rem; margin-bottom:.75rem; }
+    .cf-card h3 { font-family:'Poppins',sans-serif; font-size:1.1rem; font-weight:800; color:var(--dark); margin-bottom:.4rem; }
+    .cf-card p { font-size:.83rem; color:var(--gray); margin-bottom:1.3rem; line-height:1.6; }
+    .cf-btns { display:flex; gap:.7rem; }
+    .cf-yes {
+        flex:1; padding:12px; background:linear-gradient(135deg,#27AE60,#1E8449);
+        color:#fff; border:none; border-radius:12px;
+        font-size:.9rem; font-weight:700; font-family:'Poppins',sans-serif; cursor:pointer;
+        box-shadow:0 4px 14px rgba(39,174,96,.35); transition:all .2s;
+    }
+    .cf-yes:hover { transform:translateY(-1px); }
+    .cf-no {
+        flex:1; padding:12px; background:var(--light); color:var(--dark);
+        border:1.5px solid var(--border); border-radius:12px;
+        font-size:.9rem; font-weight:600; font-family:'Poppins',sans-serif; cursor:pointer; transition:all .2s;
+    }
+    .cf-no:hover { background:var(--border); }
+
+    @media(max-width:600px) {
+        .db-stats { grid-template-columns:1fr 1fr; }
+        .db-stats .db-stat:last-child { grid-column:span 2; }
+        .db-otp-bar { flex-direction:column; align-items:flex-start; }
+    }
+</style>
+</head>
+<body>
+
+<!-- ═══ SHOP LOGIN ═══ -->
+<div id="shopLogin">
+    <div class="sl-blob sl-blob1"></div>
+    <div class="sl-blob sl-blob2"></div>
+    <div class="sl-card">
+        <div class="sl-logo">
+            <div class="sl-logo-icon">🔧</div>
+            <h2>Fix Nearby</h2>
+            <p id="slSubtitle">Shop Dashboard Login</p>
+            <span class="sl-badge">Service Partner</span>
+        </div>
+
+        <!-- Tab switcher -->
+        <div style="display:flex;background:#f3f4f6;border-radius:10px;padding:4px;margin-bottom:1.2rem;gap:4px">
+            <button id="tabSignIn" onclick="switchTab('signin')"
+                style="flex:1;padding:8px;border:none;border-radius:8px;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s;background:#e74c3c;color:#fff">
+                Sign In
+            </button>
+            <button id="tabSignUp" onclick="switchTab('signup')"
+                style="flex:1;padding:8px;border:none;border-radius:8px;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s;background:transparent;color:#888">
+                Sign Up
+            </button>
+        </div>
+
+        <div class="sl-error" id="slError">Please check your details.</div>
+        <div id="slSuccess" style="display:none;background:#d1fae5;color:#065f46;border-radius:8px;padding:10px 12px;font-size:.82rem;font-weight:600;margin-bottom:.8rem;text-align:center"></div>
+
+        <!-- Full name -->
+        <div class="sl-field">
+            <label>Full Name</label>
+            <input type="text" id="slName" placeholder="Mohamed Yunus" autocomplete="name">
+        </div>
+
+        <!-- Phone -->
+        <div class="sl-field">
+            <label>Phone Number</label>
+            <div style="position:relative">
+                <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#888;font-size:.88rem;pointer-events:none;font-weight:600">+91</span>
+                <input type="tel" id="slPhone" placeholder="9876543210" maxlength="10"
+                    style="padding-left:46px"
+                    oninput="this.value=this.value.replace(/\D/g,'').slice(0,10);validatePhone(this)"
+                    autocomplete="tel">
+            </div>
+            <div id="phoneErr" style="font-size:.72rem;color:#e74c3c;margin-top:3px;display:none">
+                Phone number must be exactly 10 digits.
+            </div>
+        </div>
+
+        <!-- Password -->
+        <div class="sl-field" style="position:relative">
+            <label>Password</label>
+            <input type="password" id="slPass" placeholder="••••••••" autocomplete="current-password">
+            <button type="button" onclick="togglePassVis()"
+                id="passEye"
+                style="position:absolute;right:10px;top:36px;background:none;border:none;cursor:pointer;padding:2px;color:#aaa;font-size:.95rem;line-height:1;opacity:.6"
+                title="Show / hide password">&#x1F441;</button>
+        </div>
+
+        <!-- Confirm password (signup only) -->
+        <div class="sl-field" id="confirmWrap" style="display:none;position:relative">
+            <label>Confirm Password</label>
+            <input type="password" id="slConfirm" placeholder="••••••••" autocomplete="new-password">
+        </div>
+
+        <button class="sl-submit" id="slBtn" onclick="handleAuth()">Sign In →</button>
+
+        <p style="text-align:center;font-size:.78rem;color:#94a3b8;margin:.9rem 0 0">
+            <span id="switchHint">New here?</span>
+            <a href="#" onclick="switchTab(currentTab==='signin'?'signup':'signin');return false"
+               style="color:#e74c3c;font-weight:700;text-decoration:none;margin-left:4px"
+               id="switchLink">Create account</a>
+        </p>
+    </div>
+</div>
+
+<!-- ═══ DASHBOARD ═══ -->
+<div id="dashboard">
+    <!-- Topbar -->
+    <div class="db-topbar">
+        <div class="db-brand">
+            <div class="db-brand-icon">🔧</div>
+            <div>
+                <h1>Fix Nearby</h1>
+                <span id="dbShopName">Shop Dashboard</span>
+            </div>
+        </div>
+        <div class="db-user">
+            <div class="db-user-name" id="dbUserName">Shop Owner</div>
+            <button class="db-logout" onclick="shopLogout()">Logout</button>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="db-stats">
+        <div class="db-stat">
+            <div class="db-stat-ico" style="background:#fee2e2">📋</div>
+            <div>
+                <div class="ds-num" id="statTotal" style="color:#e74c3c">0</div>
+                <div class="ds-lbl">Total Jobs</div>
+            </div>
+        </div>
+        <div class="db-stat">
+            <div class="db-stat-ico" style="background:#fff3cd">⏳</div>
+            <div>
+                <div class="ds-num" id="statPending" style="color:#f39c12">0</div>
+                <div class="ds-lbl">Pending</div>
+            </div>
+        </div>
+        <div class="db-stat">
+            <div class="db-stat-ico" style="background:#d1fae5">✅</div>
+            <div>
+                <div class="ds-num" id="statDone" style="color:#27ae60">0</div>
+                <div class="ds-lbl">Completed</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- OTP verify bar -->
+    <div class="db-otp-bar">
+        <label>🔐 Verify Customer OTP:</label>
+        <div class="otp-input-wrap">
+            <input type="text" id="otpInput" maxlength="6" placeholder="Enter 6-digit OTP"
+                   oninput="this.value=this.value.replace(/\D/g,'')">
+            <button class="otp-verify-btn" onclick="verifyOTP()">Verify & Add</button>
+        </div>
+        <span class="otp-msg" id="otpMsg"></span>
+    </div>
+
+    <!-- Job list -->
+    <div class="db-main">
+        <a href="index.html" class="db-back-btn">← Back to Fix Nearby</a>
+
+        <div class="db-section-title">
+            ⏳ Pending Jobs
+            <span class="db-count-badge" id="pendingCount">0</span>
+        </div>
+        <div id="pendingList"></div>
+
+        <div class="db-section-title" style="margin-top:1.5rem">
+            ✅ Completed Jobs
+            <span class="db-count-badge" id="doneCount" style="background:#27ae60">0</span>
+        </div>
+        <div id="completedList"></div>
+    </div>
+</div>
+
+<!-- Confirm modal -->
+<div id="confirmModal">
+    <div class="cf-card">
+        <div class="cf-icon">✅</div>
+        <h3>Mark as Complete?</h3>
+        <p id="cfMsg">Are you sure the repair is done? This will notify the customer.</p>
+        <div class="cf-btns">
+            <button class="cf-yes" onclick="confirmComplete()">Yes, Complete</button>
+            <button class="cf-no" onclick="closeConfirm()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="db-toast" id="dbToast"></div>
+
+<script>
+// ══════════════════════════════════════
+// DATA — localStorage keys
+// ══════════════════════════════════════
+const JOBS_KEY   = 'shopDashboardJobs';   // shop's own job list
+const HIST_KEY   = 'fixNearbyHistory';    // shared with user index.html
+
+let shopJobs    = JSON.parse(localStorage.getItem(JOBS_KEY)  || '[]');
+let shopProfile = JSON.parse(localStorage.getItem('shopProfile') || 'null');
+let _pendingCompleteId = null;
+
+// ══════════════════════════════════════
+// LOGIN
+// ══════════════════════════════════════
+// ── TAB STATE ───────────────────────────────────────────────────────────
+let currentTab = 'signin';
+
+function switchTab(tab) {
+    currentTab = tab;
+    const isSignup = tab === 'signup';
+
+    // Tab button styles
+    document.getElementById('tabSignIn').style.background  = isSignup ? 'transparent' : '#e74c3c';
+    document.getElementById('tabSignIn').style.color       = isSignup ? '#888' : '#fff';
+    document.getElementById('tabSignUp').style.background  = isSignup ? '#e74c3c' : 'transparent';
+    document.getElementById('tabSignUp').style.color       = isSignup ? '#fff' : '#888';
+
+    // Show/hide confirm password
+    document.getElementById('confirmWrap').style.display = isSignup ? 'block' : 'none';
+
+    // Update button text & subtitle
+    document.getElementById('slBtn').textContent      = isSignup ? 'Create Account →' : 'Sign In →';
+    document.getElementById('slSubtitle').textContent = isSignup ? 'Create your account' : 'Shop Dashboard Login';
+    document.getElementById('switchHint').textContent  = isSignup ? 'Already have an account?' : 'New here?';
+    document.getElementById('switchLink').textContent  = isSignup ? 'Sign in' : 'Create account';
+
+    // Clear errors & messages
+    document.getElementById('slError').style.display   = 'none';
+    document.getElementById('slSuccess').style.display = 'none';
+    document.getElementById('phoneErr').style.display  = 'none';
+    document.getElementById('slPass').value    = '';
+    document.getElementById('slConfirm').value = '';
+}
+
+// ── VALIDATION HELPERS ───────────────────────────────────────────────────
+function validatePhone(input) {
+    const err = document.getElementById('phoneErr');
+    err.style.display = (input.value.length > 0 && input.value.length < 10) ? 'block' : 'none';
+}
+
+function togglePassVis() {
+    const inp = document.getElementById('slPass');
+    const eye = document.getElementById('passEye');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+    eye.style.opacity = inp.type === 'text' ? '1' : '0.6';
+}
+
+// ── SIGNUP ───────────────────────────────────────────────────────────────
+function shopSignup() {
+    const name    = document.getElementById('slName').value.trim();
+    const phone   = document.getElementById('slPhone').value.replace(/\D/g,'');
+    const pass    = document.getElementById('slPass').value;
+    const confirm = document.getElementById('slConfirm').value;
+
+    if (!name)              { showErr('Please enter your full name.'); return; }
+    if (phone.length !== 10){ document.getElementById('phoneErr').style.display='block'; showErr('Enter a valid 10-digit phone number.'); return; }
+    if (pass.length < 4)    { showErr('Password must be at least 4 characters.'); return; }
+    if (pass !== confirm)   { showErr('Passwords do not match.'); return; }
+
+    // Check if already registered
+    const existing = JSON.parse(localStorage.getItem('shopProfile') || 'null');
+    if (existing && existing.phone === phone) {
+        showErr('This phone number is already registered. Please sign in.'); return;
+    }
+
+    // Save new account
+    const profile = { name, phone, pass };
+    localStorage.setItem('shopProfile', JSON.stringify(profile));
+    shopProfile = profile;
+
+    showSuccess('Account created! Signing you in...');
+    setTimeout(() => enterDashboard(name), 1200);
+}
+
+// ── SIGNIN ───────────────────────────────────────────────────────────────
+function shopLogin() {
+    const phone = document.getElementById('slPhone').value.replace(/\D/g,'');
+    const pass  = document.getElementById('slPass').value;
+
+    if (phone.length !== 10){ document.getElementById('phoneErr').style.display='block'; showErr('Enter a valid 10-digit phone number.'); return; }
+    if (!pass)               { showErr('Please enter your password.'); return; }
+
+    const saved = JSON.parse(localStorage.getItem('shopProfile') || 'null');
+    if (!saved)              { showErr('No account found. Please sign up first.'); return; }
+    if (saved.phone !== phone || saved.pass !== pass) {
+        showErr('Phone number or password is incorrect.'); return;
+    }
+
+    enterDashboard(saved.name);
+}
+
+// ── COMBINED HANDLER ─────────────────────────────────────────────────────
+function handleAuth() {
+    currentTab === 'signup' ? shopSignup() : shopLogin();
+}
+
+function enterDashboard(name) {
+    document.getElementById('shopLogin').classList.add('gone');
+    setTimeout(() => {
+        document.getElementById('shopLogin').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'flex';
+        document.getElementById('dbUserName').textContent  = name || 'Shop Owner';
+        document.getElementById('dbShopName').textContent  = 'Fix Nearby Dashboard';
+        renderJobs();
+    }, 520);
+}
+
+function showErr(msg) {
+    const el = document.getElementById('slError');
+    el.textContent = msg; el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 3500);
+}
+
+function showSuccess(msg) {
+    const el = document.getElementById('slSuccess');
+    el.textContent = msg; el.style.display = 'block';
+}
+
+function shopLogout() {
+    document.getElementById('dashboard').style.display = 'none';
+    document.getElementById('shopLogin').style.display = 'flex';
+    document.getElementById('shopLogin').classList.remove('gone');
+    // Clear ALL fields on logout
+    document.getElementById('slName').value    = '';
+    document.getElementById('slPhone').value   = '';
+    document.getElementById('slPass').value    = '';
+    document.getElementById('slConfirm').value = '';
+    document.getElementById('slError').style.display   = 'none';
+    document.getElementById('slSuccess').style.display = 'none';
+    document.getElementById('phoneErr').style.display  = 'none';
+    // Reset to signin tab
+    switchTab('signin');
+}
+
+// Auto-login if already saved profile
+window.addEventListener('load', () => {
+    if (shopProfile) {
+        enterDashboard(shopProfile.name);
+    }
+});
+
+// ══════════════════════════════════════
+// OTP VERIFY — look up in user history
+// ══════════════════════════════════════
+function verifyOTP() {
+    const otp = document.getElementById('otpInput').value.trim();
+    const msg = document.getElementById('otpMsg');
+
+    if (otp.length !== 6) {
+        msg.textContent = '⚠️ Enter a 6-digit OTP'; msg.className = 'otp-msg err'; return;
+    }
+
+    // Check if already added to shop jobs
+    if (shopJobs.find(j => j.otp === otp)) {
+        msg.textContent = '⚠️ Already added'; msg.className = 'otp-msg err'; return;
+    }
+
+    // Look up in user history
+    const hist = JSON.parse(localStorage.getItem(HIST_KEY) || '[]');
+    const job  = hist.find(h => h.otp === otp);
+
+    if (!job) {
+        msg.textContent = '❌ Invalid OTP'; msg.className = 'otp-msg err'; return;
+    }
+
+    // Add to shop jobs
+    const shopJob = {
+        id:        job.id || Date.now(),
+        otp:       otp,
+        userName:  (job.userName || 'Customer').replace('👤 ',''),
+        device:    job.device || 'unknown',
+        damage:    job.damage || 'Damage',
+        severity:  job.severity || '',
+        confidence:job.confidence || 0,
+        date:      job.date || new Date().toLocaleDateString('en-IN'),
+        time:      job.time || new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),
+        thumbnail: job.thumbnail || '',
+        status:    'pending'
+    };
+
+    shopJobs.unshift(shopJob);
+    localStorage.setItem(JOBS_KEY, JSON.stringify(shopJobs));
+
+    msg.textContent = '✅ Job added!'; msg.className = 'otp-msg ok';
+    document.getElementById('otpInput').value = '';
+    setTimeout(() => msg.textContent = '', 3000);
+
+    renderJobs();
+    dbToast('✅ Customer job added successfully!', 'ok');
+}
+
+// ══════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════
+function renderJobs() {
+    const pending   = shopJobs.filter(j => j.status === 'pending');
+    const completed = shopJobs.filter(j => j.status === 'completed');
+
+    document.getElementById('statTotal').textContent   = shopJobs.length;
+    document.getElementById('statPending').textContent = pending.length;
+    document.getElementById('statDone').textContent    = completed.length;
+    document.getElementById('pendingCount').textContent = pending.length;
+    document.getElementById('doneCount').textContent   = completed.length;
+
+    renderList('pendingList',   pending,   false);
+    renderList('completedList', completed, true);
+}
+
+function renderList(containerId, jobs, isDone) {
+    const el = document.getElementById(containerId);
+    if (jobs.length === 0) {
+        el.innerHTML = '<div class="db-empty"><div class="de-icon">'
+            + (isDone ? '🎉' : '📭') + '</div><h3>'
+            + (isDone ? 'No completed jobs yet' : 'No pending jobs') + '</h3><p>'
+            + (isDone ? 'Completed repairs will appear here.' : 'Verify a customer OTP to add jobs.')
+            + '</p></div>';
+        return;
+    }
+    el.innerHTML = '';
+    jobs.forEach(job => {
+        const card = document.createElement('div');
+        card.className = 'job-card' + (isDone ? ' completed' : '');
+        const devIcons = {mobile:'📱', laptop:'💻'};
+        const thumbHtml = job.thumbnail
+            ? '<img class="job-thumb" src="'+job.thumbnail+'" alt="">'
+            : '<div class="job-thumb-placeholder">'+(devIcons[job.device]||'🔧')+'</div>';
+        const conf = job.confidence ? Math.round(job.confidence*100)+'%' : '';
+        const detailText = (devIcons[job.device]||'') + ' ' + job.device
+            + (job.severity ? ' · ' + job.severity : '')
+            + (conf ? ' · ' + conf + ' confidence' : '');
+
+        const rightHtml = isDone
+            ? '<div class="job-status completed">✅ Completed</div>'
+            : '<div class="job-status pending">⏳ Pending</div>'
+              + '<button class="job-complete-btn" onclick="askComplete(\''+job.otp+'\')">Mark Complete ✓</button>';
+
+        card.innerHTML = thumbHtml
+            + '<div class="job-info">'
+            + '<div class="ji-name">👤 ' + job.userName + '</div>'
+            + '<div class="ji-detail">' + detailText + '</div>'
+            + '<div class="ji-detail" style="font-weight:600;color:#c0392b">' + job.damage + '</div>'
+            + '<div class="ji-otp">OTP: ' + job.otp + '</div>'
+            + '<div class="ji-time">📅 ' + job.date + ' ' + job.time + '</div>'
+            + '</div>'
+            + '<div class="job-right">' + rightHtml + '</div>';
+        el.appendChild(card);
+    });
+}
+
+// ══════════════════════════════════════
+// COMPLETE JOB
+// ══════════════════════════════════════
+function askComplete(otp) {
+    _pendingCompleteId = otp;
+    const job = shopJobs.find(j => j.otp === otp);
+    if (job) {
+        document.getElementById('cfMsg').textContent =
+            'Mark "' + job.damage + '" for ' + job.userName + ' as complete?';
+    }
+    document.getElementById('confirmModal').classList.add('open');
+}
+function closeConfirm() {
+    document.getElementById('confirmModal').classList.remove('open');
+    _pendingCompleteId = null;
+}
+function confirmComplete() {
+    const otp = _pendingCompleteId;
+    closeConfirm();
+    if (!otp) return;
+
+    // Update shop jobs
+    const idx = shopJobs.findIndex(j => j.otp === otp);
+    if (idx === -1) return;
+    shopJobs[idx].status = 'completed';
+    localStorage.setItem(JOBS_KEY, JSON.stringify(shopJobs));
+
+    // Update user history in shared localStorage
+    let hist = JSON.parse(localStorage.getItem(HIST_KEY) || '[]');
+    const hIdx = hist.findIndex(h => h.otp === otp);
+    if (hIdx !== -1) {
+        hist[hIdx].status = 'fixed';
+        localStorage.setItem(HIST_KEY, JSON.stringify(hist));
+    }
+
+    renderJobs();
+    dbToast('✅ Job marked complete! Customer notified.', 'ok');
+}
+
+// ══════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════
+function dbToast(msg, type) {
+    const t = document.getElementById('dbToast');
+    t.textContent = msg;
+    t.className = 'db-toast show t-' + (type || 'ok');
+    clearTimeout(t._tmr);
+    t._tmr = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ══════════════════════════════════════
+// INIT
+// ══════════════════════════════════════
+// Poll for updates every 5s (auto-refresh jobs)
+setInterval(() => {
+    if (document.getElementById('dashboard').style.display !== 'none') {
+        shopJobs = JSON.parse(localStorage.getItem(JOBS_KEY) || '[]');
+        renderJobs();
+    }
+}, 5000);
+</script>
+</body>
+</html>
